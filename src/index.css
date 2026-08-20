@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --color-phase-menstruation: #fb7185;
+  --color-phase-follicular: #6ee7b7;
+  --color-phase-ovulation: #fb7cac;
+  --color-phase-luteal: #c4b5fd;
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  background: #fdf7f9;
+  color: #1f1a24;
+  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+}

@@ -43,7 +43,7 @@ export default function PredictionDetail({ device }) {
           <h3 className="text-sm font-medium opacity-70">다음 이벤트 예측</h3>
           <p className="mt-2 text-sm">LH surge 예상: {nextEvents.lh_surge_expected}</p>
           <p className="mt-1 text-sm">
-            배란 윈도우 확률: {Math.round(nextEvents.ovulation_window_prob * 100)}%
+            가임 윈도우 확률: {Math.round(nextEvents.fertility_window_prob * 100)}%
           </p>
         </div>
       </div>

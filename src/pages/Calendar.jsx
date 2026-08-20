@@ -31,7 +31,7 @@ export default function Calendar({ device }) {
 
   return (
     <Frame>
-      <CycleCalendar calendar={calendar} />
+      <CycleCalendar calendar={calendar} device={device} />
     </Frame>
   );
 }

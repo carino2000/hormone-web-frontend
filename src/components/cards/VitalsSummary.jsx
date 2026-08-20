@@ -1,8 +1,9 @@
 const LABELS = {
-  hrv: "HRV",
-  skin_temp: "피부온도",
+  rmssd: "HRV",
+  nightly_temp: "야간 피부온도",
   resting_hr: "안정시 심박",
   sleep_score: "수면 점수",
+  glucose_mean: "평균 혈당",
 };
 
 export default function VitalsSummary({ vitals }) {

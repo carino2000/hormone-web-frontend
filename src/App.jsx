@@ -3,6 +3,7 @@ import { NavLink, Route, Routes } from "react-router-dom";
 import Home from "./pages/Home";
 import PredictionDetail from "./pages/PredictionDetail";
 import Calendar from "./pages/Calendar";
+import { NAV_ITEMS } from "./lib/navItems";
 
 const DEVICES = [
   { key: "pc", label: "PC" },
@@ -10,17 +11,11 @@ const DEVICES = [
   { key: "watch", label: "워치" },
 ];
 
-const PAGES = [
-  { to: "/", label: "홈" },
-  { to: "/prediction", label: "예측 상세" },
-  { to: "/calendar", label: "달력" },
-];
-
 function App() {
   const [device, setDevice] = useState("pc");
 
   return (
-    <div className="min-h-screen bg-neutral-50 pb-24">
+    <div className={`min-h-screen bg-neutral-50 ${device === "pc" ? "pb-24" : "pb-10"}`}>
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-black/5 bg-white/80 px-6 py-3 backdrop-blur">
         <h1 className="text-sm font-semibold">호르몬 예측 대시보드</h1>
         <div className="flex gap-1 rounded-full bg-neutral-100 p-1">
@@ -47,18 +42,22 @@ function App() {
         </Routes>
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 flex justify-center gap-6 border-t border-black/5 bg-white/90 py-3 backdrop-blur">
-        {PAGES.map((p) => (
-          <NavLink
-            key={p.to}
-            to={p.to}
-            end={p.to === "/"}
-            className={({ isActive }) => `text-xs font-medium ${isActive ? "text-rose-400" : "opacity-50"}`}
-          >
-            {p.label}
-          </NavLink>
-        ))}
-      </nav>
+      {/* 모바일/워치는 각자의 프레임(MobileFrame 하단 탭바, WatchFrame 페이지 점)이 자체
+          내비게이션을 갖고 있으므로, 여기서는 PC 미리보기용 탭만 보여준다. */}
+      {device === "pc" && (
+        <nav className="fixed inset-x-0 bottom-0 flex justify-center gap-6 border-t border-black/5 bg-white/90 py-3 backdrop-blur">
+          {NAV_ITEMS.map(({ to, label, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className={({ isActive }) => `text-xs font-medium ${isActive ? "text-rose-400" : "opacity-50"}`}
+            >
+              {label}
+            </NavLink>
+          ))}
+        </nav>
+      )}
     </div>
   );
 }

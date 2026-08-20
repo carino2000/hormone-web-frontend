@@ -4,7 +4,7 @@ export default function ContributionBars({ contributions }) {
       <h3 className="text-sm font-medium opacity-70">예측 근거 (신호 기여도)</h3>
       <ul className="mt-4 flex flex-col gap-3">
         {contributions.map((c) => (
-          <li key={c.label}>
+          <li key={c.feature}>
             <div className="flex items-center justify-between text-xs">
               <span>{c.signal}</span>
               <span className="opacity-60">{Math.round(c.weight * 100)}%</span>

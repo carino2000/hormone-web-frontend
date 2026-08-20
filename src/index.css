@@ -35,3 +35,31 @@ body {
   background: #05070d;
   color: #e7e9f0;
 }
+
+/* 스크롤은 되지만 스크롤바는 안 보이게 — 모바일 프레임 내부처럼 실제 기기 화면을
+   흉내내는 곳에서 브라우저 스크롤바가 보이면 목업 느낌이 깨진다. */
+.no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* 구형 Edge/IE */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Edge */
+}
+
+/* PC에서 날짜 선택/월 이동처럼 콘텐츠가 바뀔 때 뚝 끊기지 않고 살짝 떠오르며
+   나타나게 한다. key를 바꿔서 새로 마운트되는 요소에 붙이면 매번 재생된다. */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 220ms ease-out;
+}

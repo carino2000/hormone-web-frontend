@@ -8,7 +8,7 @@ export default function MonthGrid({ cursorDate, phaseByDate, notesByDate, select
   const todayKey = dateKeyOf(new Date());
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <div className="grid grid-cols-7 text-center text-[11px] font-semibold">
         {DOW_KO.map((d, i) => (
           <div

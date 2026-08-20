@@ -28,7 +28,7 @@ export default function DiaryPanel({ dateKey, phase, note, onSave, onDelete, onC
 
   if (!dateKey) {
     return (
-      <div className="flex h-full min-h-[160px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-rose-200 bg-rose-50/50 p-8 text-center text-xs text-neutral-400 dark:border-slate-700 dark:bg-white/5 dark:text-slate-500">
+      <div className="animate-fade-in flex h-full min-h-[160px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-rose-200 bg-rose-50/50 p-8 text-center text-xs text-neutral-400 dark:border-slate-700 dark:bg-white/5 dark:text-slate-500">
         <NotebookPen className="h-6 w-6 text-rose-300 dark:text-slate-600" />
         <p>
           날짜를 선택하면
@@ -51,7 +51,7 @@ export default function DiaryPanel({ dateKey, phase, note, onSave, onDelete, onC
       className={
         isSheet
           ? "flex flex-col"
-          : "flex h-full flex-col rounded-2xl border border-rose-100 bg-gradient-to-br from-rose-50 via-pink-50 to-violet-50 p-4 dark:border-white/10 dark:from-slate-800 dark:via-slate-900 dark:to-slate-950"
+          : "animate-fade-in flex h-full flex-col rounded-2xl border border-rose-100 bg-gradient-to-br from-rose-50 via-pink-50 to-violet-50 p-4 dark:border-white/10 dark:from-slate-800 dark:via-slate-900 dark:to-slate-950"
       }
     >
       <div className="flex items-start justify-between gap-2">

@@ -6,7 +6,10 @@ export default function PCFrame({ children }) {
         <span className="h-2.5 w-2.5 rounded-full bg-amber-300" />
         <span className="h-2.5 w-2.5 rounded-full bg-emerald-300" />
       </div>
-      <div className="p-6">{children}</div>
+      {/* 페이지마다 콘텐츠 길이가 달라도(홈/예측상세/달력) 창 크기가 늘었다 줄었다 하지
+          않도록 고정 높이 + 내부 스크롤로 처리한다. 기준은 세 화면 중 가장 긴 달력
+          탭(약 568px)보다 여유 있게 큰 값. */}
+      <div className="h-[600px] overflow-y-auto p-6">{children}</div>
     </div>
   );
 }

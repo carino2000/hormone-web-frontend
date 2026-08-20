@@ -38,14 +38,30 @@ function App() {
     }
   }, [theme]);
 
+  // 모바일/워치는 기기 프레임이 화면 위에 "떠 있는 사물"처럼 보여야 하므로, 다크모드를
+  // 선택해도 프레임 바깥(헤더·캔버스 배경)은 밝게 유지한다 — 어두운 배경 위에 검은
+  // 폰/워치 베젤이 묻히지 않게. 프레임 안쪽(실제 화면 콘텐츠)은 device와 무관하게 항상
+  // theme를 그대로 따른다(각 카드가 자체적으로 dark: 유틸리티를 쓴다).
+  const shellDark = theme === "dark" && device === "pc";
+  // 모바일/워치는 기기 미리보기 한 장이 화면에 딱 들어오면 되는 구조라, 페이지 자체가
+  // 뷰포트보다 커져서 바깥(흰 배경) 스크롤이 생기는 걸 원치 않는다. h-screen + overflow-hidden으로
+  // 바깥 스크롤을 아예 없애고, 안쪽 main만 필요하면 스크롤되게 한다(폰 프레임 내부 스크롤은 별개).
+  const isPhoneDevice = device === "mobile" || device === "watch";
+
   return (
     <div
-      className={`min-h-screen bg-neutral-50 dark:bg-slate-950 ${device === "pc" ? "pb-24" : "pb-10"}`}
+      className={`${isPhoneDevice ? "flex h-screen flex-col overflow-hidden" : "min-h-screen"} ${
+        shellDark ? "bg-slate-950" : "bg-neutral-50"
+      } ${device === "pc" ? "pb-24" : ""}`}
     >
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-black/5 bg-white/80 px-6 py-3 backdrop-blur dark:border-white/5 dark:bg-slate-950/80">
-        <h1 className="text-sm font-semibold dark:text-slate-100">호르몬 예측 대시보드</h1>
+      <header
+        className={`sticky top-0 z-10 flex shrink-0 items-center justify-between border-b px-6 py-3 backdrop-blur ${
+          shellDark ? "border-white/5 bg-slate-950/80 text-slate-100" : "border-black/5 bg-white/80 text-neutral-900"
+        }`}
+      >
+        <h1 className="text-sm font-semibold">호르몬 예측 대시보드</h1>
         <div className="flex items-center gap-2">
-          <div className="flex gap-1 rounded-full bg-neutral-100 p-1 dark:bg-slate-900">
+          <div className={`flex gap-1 rounded-full p-1 ${shellDark ? "bg-slate-900" : "bg-neutral-100"}`}>
             {THEMES.map((t) => {
               const Icon = t.icon;
               const active = theme === t.key;
@@ -58,8 +74,10 @@ function App() {
                   aria-pressed={active}
                   className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition ${
                     active
-                      ? "bg-white shadow-sm dark:bg-slate-700 dark:text-amber-300"
-                      : "opacity-60 dark:text-slate-400"
+                      ? theme === "dark"
+                        ? "bg-slate-700 text-amber-300"
+                        : "bg-white text-neutral-900 shadow-sm"
+                      : "opacity-60"
                   }`}
                 >
                   <Icon className="h-3.5 w-3.5" />
@@ -68,7 +86,7 @@ function App() {
               );
             })}
           </div>
-          <div className="flex gap-1 rounded-full bg-neutral-100 p-1 dark:bg-slate-900">
+          <div className={`flex gap-1 rounded-full p-1 ${shellDark ? "bg-slate-900" : "bg-neutral-100"}`}>
             {DEVICES.map((d) => (
               <button
                 key={d.key}
@@ -76,8 +94,10 @@ function App() {
                 onClick={() => setDevice(d.key)}
                 className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                   device === d.key
-                    ? "bg-white shadow-sm dark:bg-slate-700 dark:text-orange-300"
-                    : "opacity-60 dark:text-slate-400"
+                    ? shellDark
+                      ? "bg-slate-700 text-orange-300"
+                      : "bg-white text-neutral-900 shadow-sm"
+                    : "opacity-60"
                 }`}
               >
                 {d.label}
@@ -87,7 +107,7 @@ function App() {
         </div>
       </header>
 
-      <main className="px-6 py-10">
+      <main className={`px-6 ${isPhoneDevice ? "flex flex-1 items-start justify-center overflow-y-auto py-6" : "py-10"}`}>
         <Routes>
           <Route path="/" element={<Home device={device} />} />
           <Route path="/prediction" element={<PredictionDetail device={device} theme={theme} />} />

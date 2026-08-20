@@ -11,7 +11,16 @@ export default function MonthGrid({ cursorDate, phaseByDate, notesByDate, select
     <div>
       <div className="grid grid-cols-7 text-center text-[11px] font-semibold">
         {DOW_KO.map((d, i) => (
-          <div key={d} className={i === 0 ? "text-rose-300" : i === 6 ? "text-sky-300" : "text-neutral-400"}>
+          <div
+            key={d}
+            className={
+              i === 0
+                ? "text-rose-300 dark:text-rose-400/80"
+                : i === 6
+                  ? "text-sky-300 dark:text-sky-400/80"
+                  : "text-neutral-400 dark:text-slate-500"
+            }
+          >
             {d}
           </div>
         ))}
@@ -41,15 +50,21 @@ export default function MonthGrid({ cursorDate, phaseByDate, notesByDate, select
                       phase
                         ? `${PHASE_COLOR_CLASS[phase]} ${PHASE_TEXT_ON_COLOR[phase]} font-semibold`
                         : inMonth
-                          ? "font-medium text-neutral-700 hover:bg-rose-50"
-                          : "font-normal text-neutral-300",
-                      isSelected ? "ring-2 ring-rose-400 ring-offset-2 ring-offset-white" : "",
-                      isToday && !isSelected ? "ring-1 ring-neutral-300 ring-offset-1 ring-offset-white" : "",
+                          ? "font-medium text-neutral-700 hover:bg-rose-50 dark:text-slate-300 dark:hover:bg-white/5"
+                          : "font-normal text-neutral-300 dark:text-slate-700",
+                      isSelected
+                        ? "ring-2 ring-rose-400 ring-offset-2 ring-offset-white dark:ring-amber-400 dark:ring-offset-slate-900"
+                        : "",
+                      isToday && !isSelected
+                        ? "ring-1 ring-neutral-300 ring-offset-1 ring-offset-white dark:ring-slate-600 dark:ring-offset-slate-900"
+                        : "",
                     ].join(" ")}
                   >
                     {date.getDate()}
                   </span>
-                  <span className={`h-1 w-1 rounded-full ${hasNote ? "bg-rose-400" : "bg-transparent"}`} />
+                  <span
+                    className={`h-1 w-1 rounded-full ${hasNote ? "bg-rose-400 dark:bg-amber-400" : "bg-transparent"}`}
+                  />
                 </button>
               );
             })}

@@ -8,7 +8,7 @@ import ContributionBars from "../components/cards/ContributionBars";
 
 const FRAMES = { pc: PCFrame, mobile: MobileFrame, watch: WatchFrame };
 
-export default function PredictionDetail({ device }) {
+export default function PredictionDetail({ device, theme }) {
   const [series, setSeries] = useState(null);
   const [contributions, setContributions] = useState(null);
   const [nextEvents, setNextEvents] = useState(null);
@@ -28,7 +28,9 @@ export default function PredictionDetail({ device }) {
       <Frame>
         <div className="text-center">
           <p className="text-[10px] opacity-70">LH Surge 예상</p>
-          <p className="text-sm font-semibold">{nextEvents.lh_surge_expected}</p>
+          <p className="text-sm font-semibold">
+            {nextEvents.lh_surge_expected}
+          </p>
         </div>
       </Frame>
     );
@@ -36,14 +38,21 @@ export default function PredictionDetail({ device }) {
 
   return (
     <Frame>
-      <div className={device === "pc" ? "grid grid-cols-2 gap-4" : "flex flex-col gap-4"}>
-        <HormoneChart data={series} />
+      <div
+        className={
+          device === "pc" ? "grid grid-cols-2 gap-4" : "flex flex-col gap-4"
+        }
+      >
+        <HormoneChart data={series} theme={theme} />
         <ContributionBars contributions={contributions} />
-        <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-slate-900">
           <h3 className="text-sm font-medium opacity-70">다음 이벤트 예측</h3>
-          <p className="mt-2 text-sm">LH surge 예상: {nextEvents.lh_surge_expected}</p>
+          <p className="mt-2 text-sm">
+            LH surge 예상: {nextEvents.lh_surge_expected}
+          </p>
           <p className="mt-1 text-sm">
-            가임 윈도우 확률: {Math.round(nextEvents.fertility_window_prob * 100)}%
+            가임 윈도우 확률:{" "}
+            {Math.round(nextEvents.fertility_window_prob * 100)}%
           </p>
         </div>
       </div>

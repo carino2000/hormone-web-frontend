@@ -15,7 +15,7 @@ export default function PredictionSummaryCard({ summary, compact = false }) {
   }
 
   return (
-    <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
+    <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-slate-900">
       <div className="flex items-center gap-2">
         <span className={`h-2.5 w-2.5 rounded-full ${PHASE_COLOR_CLASS[phase]}`} />
         <span className="text-sm font-medium opacity-70">{phase_label_ko}</span>
@@ -24,7 +24,7 @@ export default function PredictionSummaryCard({ summary, compact = false }) {
         {next_event_label} D-{days_to_next_event}
       </p>
       <p className="mt-1 text-sm opacity-60">예측 확신도 {Math.round(confidence * 100)}%</p>
-      <p className="mt-4 rounded-xl bg-neutral-50 p-3 text-sm leading-relaxed">{summary_text}</p>
+      <p className="mt-4 rounded-xl bg-neutral-50 p-3 text-sm leading-relaxed dark:bg-white/5">{summary_text}</p>
     </div>
   );
 }

@@ -16,7 +16,9 @@ export default function WatchFrame({ children }) {
               end={end}
               aria-label={label}
               className={({ isActive }) =>
-                `h-1.5 rounded-full transition-all ${isActive ? "w-4 bg-rose-400" : "w-1.5 bg-neutral-700"}`
+                `h-1.5 rounded-full transition-all ${
+                  isActive ? "w-4 bg-rose-400 dark:bg-orange-400" : "w-1.5 bg-neutral-700"
+                }`
               }
             />
           ))}

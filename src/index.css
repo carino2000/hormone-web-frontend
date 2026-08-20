@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* 클래스 기반 다크모드 — <html class="dark">가 붙으면 dark: 유틸리티가 활성화된다. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-phase-menstruation: #fb7185;
   --color-phase-follicular: #6ee7b7;
@@ -16,4 +19,19 @@ body {
   background: #fdf7f9;
   color: #1f1a24;
   font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
+/* 다크모드 — 블랙/네이비 배경 + 오렌지/옐로우 포인트. phase 색상은 같은 CSS 변수를
+   덮어써서 컴포넌트 코드 변경 없이 자동으로 어두운 배경에 맞게(더 선명하게) 바뀐다. */
+.dark {
+  color-scheme: dark;
+  --color-phase-menstruation: #fb7185;
+  --color-phase-follicular: #34d399;
+  --color-phase-ovulation: #fb7cac;
+  --color-phase-luteal: #a78bfa;
+}
+
+.dark body {
+  background: #05070d;
+  color: #e7e9f0;
 }

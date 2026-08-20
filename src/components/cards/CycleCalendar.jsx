@@ -28,23 +28,25 @@ export default function CycleCalendar({ calendar, device = "pc" }) {
   };
 
   const calendarCard = (
-    <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm dark:border-white/5 dark:bg-slate-900">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={() => setCursor((c) => addMonths(c, -1))}
             aria-label="이전 달"
-            className="rounded-full p-1.5 text-neutral-400 transition hover:bg-rose-50 hover:text-rose-400"
+            className="rounded-full p-1.5 text-neutral-400 transition hover:bg-rose-50 hover:text-rose-400 dark:text-slate-500 dark:hover:bg-white/5 dark:hover:text-amber-400"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <h3 className="w-28 text-center text-sm font-semibold text-neutral-800">{monthLabel}</h3>
+          <h3 className="w-28 text-center text-sm font-semibold text-neutral-800 dark:text-slate-100">
+            {monthLabel}
+          </h3>
           <button
             type="button"
             onClick={() => setCursor((c) => addMonths(c, 1))}
             aria-label="다음 달"
-            className="rounded-full p-1.5 text-neutral-400 transition hover:bg-rose-50 hover:text-rose-400"
+            className="rounded-full p-1.5 text-neutral-400 transition hover:bg-rose-50 hover:text-rose-400 dark:text-slate-500 dark:hover:bg-white/5 dark:hover:text-amber-400"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -52,7 +54,7 @@ export default function CycleCalendar({ calendar, device = "pc" }) {
         <button
           type="button"
           onClick={goToday}
-          className="rounded-full border border-rose-200 px-3 py-1 text-[11px] font-medium text-rose-400 transition hover:bg-rose-50"
+          className="rounded-full border border-rose-200 px-3 py-1 text-[11px] font-medium text-rose-400 transition hover:bg-rose-50 dark:border-amber-400/30 dark:text-amber-400 dark:hover:bg-amber-400/10"
         >
           오늘
         </button>
@@ -68,15 +70,17 @@ export default function CycleCalendar({ calendar, device = "pc" }) {
         />
       </div>
 
-      <div className="mt-3 border-t border-black/5 pt-3">
+      <div className="mt-3 border-t border-black/5 pt-3 dark:border-white/5">
         <PhaseLegend />
       </div>
 
       {!hasPredictionData && (
-        <p className="mt-3 text-center text-[11px] text-neutral-300">이 달은 예측 데이터가 아직 없어요</p>
+        <p className="mt-3 text-center text-[11px] text-neutral-300 dark:text-slate-600">
+          이 달은 예측 데이터가 아직 없어요
+        </p>
       )}
 
-      <div className="mt-4 flex items-center gap-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-500">
+      <div className="mt-4 flex items-center gap-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-500 dark:bg-amber-400/10 dark:text-amber-400">
         <Sparkles className="h-4 w-4 shrink-0" />
         다음 월경 예상: <span className="font-semibold">{calendar.next_period_estimate}</span>
       </div>
@@ -93,9 +97,9 @@ export default function CycleCalendar({ calendar, device = "pc" }) {
         {calendarCard}
         {selectedKey && (
           <>
-            <div className="absolute inset-0 z-10 bg-neutral-900/10" onClick={closeDiary} />
-            <div className="absolute inset-x-0 bottom-0 z-20 rounded-t-3xl border border-b-0 border-rose-100 bg-white p-4 pt-3 shadow-[0_-16px_32px_-12px_rgba(244,63,94,0.35)]">
-              <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-neutral-200" />
+            <div className="absolute inset-0 z-10 bg-neutral-900/10 dark:bg-black/40" onClick={closeDiary} />
+            <div className="absolute inset-x-0 bottom-0 z-20 rounded-t-3xl border border-b-0 border-rose-100 bg-white p-4 pt-3 shadow-[0_-16px_32px_-12px_rgba(244,63,94,0.35)] dark:border-white/10 dark:bg-slate-900 dark:shadow-[0_-16px_32px_-12px_rgba(0,0,0,0.7)]">
+              <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-neutral-200 dark:bg-slate-700" />
               <DiaryPanel
                 dateKey={selectedKey}
                 phase={phaseByDate[selectedKey]}

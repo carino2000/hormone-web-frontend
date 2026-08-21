@@ -1,7 +1,7 @@
 import { DOW_KO, dateKeyOf, getMonthMatrix } from "../../lib/calendarGrid";
 import { PHASE_COLOR_CLASS, PHASE_TEXT_ON_COLOR } from "../../lib/phase";
 
-export default function MonthGrid({ cursorDate, phaseByDate, notesByDate, selectedKey, onSelectDate }) {
+export default function MonthGrid({ cursorDate, phaseByDate, statusByDate = {}, notesByDate, selectedKey, onSelectDate }) {
   const year = cursorDate.getFullYear();
   const month = cursorDate.getMonth() + 1;
   const weeks = getMonthMatrix(year, month);
@@ -33,6 +33,8 @@ export default function MonthGrid({ cursorDate, phaseByDate, notesByDate, select
               const key = dateKeyOf(date);
               const inMonth = date.getMonth() + 1 === month;
               const phase = inMonth ? phaseByDate[key] : null;
+              const status = inMonth ? statusByDate[key]?.status : null;
+              const collecting = status === "collecting";
               const hasNote = !!notesByDate[key];
               const isToday = key === todayKey;
               const isSelected = key === selectedKey;
@@ -49,9 +51,11 @@ export default function MonthGrid({ cursorDate, phaseByDate, notesByDate, select
                       "flex h-8 w-8 items-center justify-center rounded-full text-xs transition",
                       phase
                         ? `${PHASE_COLOR_CLASS[phase]} ${PHASE_TEXT_ON_COLOR[phase]} font-semibold`
-                        : inMonth
-                          ? "font-medium text-neutral-700 hover:bg-rose-50 dark:text-slate-300 dark:hover:bg-white/5"
-                          : "font-normal text-neutral-300 dark:text-slate-700",
+                        : collecting
+                          ? "border border-dashed border-sky-300 font-medium text-sky-500 dark:border-sky-400/60 dark:text-sky-300"
+                          : inMonth
+                            ? "font-medium text-neutral-700 hover:bg-rose-50 dark:text-slate-300 dark:hover:bg-white/5"
+                            : "font-normal text-neutral-300 dark:text-slate-700",
                       isSelected
                         ? "ring-2 ring-rose-400 ring-offset-2 ring-offset-white dark:ring-amber-400 dark:ring-offset-slate-900"
                         : "",

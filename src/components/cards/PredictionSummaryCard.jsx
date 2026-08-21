@@ -1,30 +1,58 @@
+import { motion } from "framer-motion";
 import { PHASE_COLOR_CLASS } from "../../lib/phase";
+import { useCountUp } from "../../lib/useCountUp";
+import { useChangeFlash } from "../../lib/useChangeFlash";
 
-export default function PredictionSummaryCard({ summary, compact = false }) {
+export default function PredictionSummaryCard({ summary, compact = false, fastForward = false }) {
   const { phase, phase_label_ko, confidence, days_to_next_event, next_event_label, summary_text } = summary;
+
+  const confidencePct = useCountUp(Math.round(confidence * 100), { disabled: fastForward });
+  const dDay = useCountUp(days_to_next_event, { disabled: fastForward });
+  // phase는 하루 만에 자주 안 바뀐다 — 바뀌는 날에는 조용히 넘어가지 않고 카드 전체를
+  // 한 번 크게 펄스시켜 "단계가 전환됐다"를 눈에 띄게 알린다.
+  const phaseJustChanged = useChangeFlash(phase, { duration: 1400, disabled: fastForward });
 
   if (compact) {
     return (
       <div className="flex flex-col items-center gap-1 text-center">
         <span className={`h-2 w-2 rounded-full ${PHASE_COLOR_CLASS[phase]}`} />
         <p className="text-[11px] font-medium">{phase_label_ko}</p>
-        <p className="text-lg font-semibold">D-{days_to_next_event}</p>
-        <p className="text-[10px] opacity-70">확신도 {Math.round(confidence * 100)}%</p>
+        <p className="text-lg font-semibold">D-{dDay}</p>
+        <p className="text-[10px] opacity-70">확신도 {confidencePct}%</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-slate-900">
-      <div className="flex items-center gap-2">
-        <span className={`h-2.5 w-2.5 rounded-full ${PHASE_COLOR_CLASS[phase]}`} />
-        <span className="text-sm font-medium opacity-70">{phase_label_ko}</span>
+    <motion.div
+      animate={phaseJustChanged ? { scale: [1, 1.02, 1] } : undefined}
+      transition={{ duration: 0.5 }}
+      className={`rounded-2xl border bg-white p-6 shadow-sm transition-colors dark:bg-slate-900 ${
+        phaseJustChanged
+          ? "border-rose-300 shadow-rose-100 dark:border-amber-400/60 dark:shadow-amber-400/10"
+          : "border-black/5 dark:border-white/5"
+      }`}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className={`h-2.5 w-2.5 rounded-full ${PHASE_COLOR_CLASS[phase]}`} />
+          <span className="text-sm font-medium opacity-70">{phase_label_ko}</span>
+        </div>
+        {phaseJustChanged && (
+          <motion.span
+            initial={{ opacity: 0, x: 6 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-400 dark:bg-amber-400/10 dark:text-amber-400"
+          >
+            단계 전환
+          </motion.span>
+        )}
       </div>
       <p className="mt-2 text-3xl font-semibold">
-        {next_event_label} D-{days_to_next_event}
+        {next_event_label} D-{dDay}
       </p>
-      <p className="mt-1 text-sm opacity-60">예측 확신도 {Math.round(confidence * 100)}%</p>
+      <p className="mt-1 text-sm opacity-60">예측 확신도 {confidencePct}%</p>
       <p className="mt-4 rounded-xl bg-neutral-50 p-3 text-sm leading-relaxed dark:bg-white/5">{summary_text}</p>
-    </div>
+    </motion.div>
   );
 }

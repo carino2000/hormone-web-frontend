@@ -5,12 +5,15 @@ import PhaseLegend from "../calendar/PhaseLegend";
 import DiaryPanel from "../calendar/DiaryPanel";
 import { addMonths, dateKeyOf } from "../../lib/calendarGrid";
 import { useCalendarNotes } from "../../lib/useCalendarNotes";
+import { formatKoreanDate } from "../../lib/formatDate";
 
 const SHEET_TRANSITION_MS = 300;
 
-export default function CycleCalendar({ calendar, device = "pc" }) {
-  const [year, month] = calendar.month.split("-").map(Number);
-  const [cursor, setCursor] = useState(new Date(year, month - 1, 1));
+export default function CycleCalendar({ calendar, device = "pc", currentDay, currentDate, coldStartDays }) {
+  const [initialYear, initialMonth] = (currentDate ?? calendar.days[0]?.date ?? "2026-01-01")
+    .split("-")
+    .map(Number);
+  const [cursor, setCursor] = useState(new Date(initialYear, initialMonth - 1, 1));
   const [selectedKey, setSelectedKey] = useState(null);
   const { notes, saveNote, deleteNote } = useCalendarNotes();
 
@@ -62,14 +65,22 @@ export default function CycleCalendar({ calendar, device = "pc" }) {
     return undefined;
   }, [selectedKey, device, sheetMounted]);
 
+  // status: 'predicted'(phase 색으로 표시) | 'collecting'(콜드스타트 중, 아직 예측 없음)
+  // | 'future'(시뮬레이터가 아직 넘기지 않은 날 — 스포일러 방지로 표시 안 함)
+  const statusByDate = useMemo(
+    () => Object.fromEntries(calendar.days.map((d) => [d.date, d])),
+    [calendar.days],
+  );
   const phaseByDate = useMemo(
-    () => Object.fromEntries(calendar.days.map((d) => [d.date, d.phase])),
+    () => Object.fromEntries(calendar.days.filter((d) => d.status === "predicted").map((d) => [d.date, d.phase])),
     [calendar.days],
   );
 
   const monthLabel = `${cursor.getFullYear()}년 ${cursor.getMonth() + 1}월`;
   const cursorMonthKey = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`;
-  const hasPredictionData = cursorMonthKey === calendar.month;
+  const hasPredictionData = calendar.days.some(
+    (d) => d.date.startsWith(cursorMonthKey) && d.status !== "future",
+  );
 
   const goToday = () => {
     const today = new Date();
@@ -115,14 +126,19 @@ export default function CycleCalendar({ calendar, device = "pc" }) {
           key={cursorMonthKey}
           cursorDate={cursor}
           phaseByDate={phaseByDate}
+          statusByDate={statusByDate}
           notesByDate={notes}
           selectedKey={selectedKey}
           onSelectDate={setSelectedKey}
         />
       </div>
 
-      <div className="mt-3 border-t border-black/5 pt-3 dark:border-white/5">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-black/5 pt-3 dark:border-white/5">
         <PhaseLegend />
+        <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 dark:text-slate-400">
+          <span className="h-2.5 w-2.5 rounded-full border border-dashed border-sky-300 dark:border-sky-400" />
+          수집 중
+        </div>
       </div>
 
       {!hasPredictionData && (
@@ -131,10 +147,17 @@ export default function CycleCalendar({ calendar, device = "pc" }) {
         </p>
       )}
 
-      <div className="mt-4 flex items-center gap-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-500 dark:bg-amber-400/10 dark:text-amber-400">
-        <Sparkles className="h-4 w-4 shrink-0" />
-        다음 월경 예상: <span className="font-semibold">{calendar.next_period_estimate}</span>
-      </div>
+      {calendar.next_period_estimate ? (
+        <div className="mt-4 flex items-center gap-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-500 dark:bg-amber-400/10 dark:text-amber-400">
+          <Sparkles className="h-4 w-4 shrink-0" />
+          다음 월경 예상: <span className="font-semibold">{formatKoreanDate(calendar.next_period_estimate)}</span>
+        </div>
+      ) : (
+        <div className="mt-4 flex items-center gap-2 rounded-xl bg-sky-50 p-3 text-sm text-sky-500 dark:bg-sky-400/10 dark:text-sky-300">
+          <Sparkles className="h-4 w-4 shrink-0" />
+          베이스라인 데이터 수집 중 · {currentDay}/{coldStartDays}일
+        </div>
+      )}
     </div>
   );
 

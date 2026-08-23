@@ -8,20 +8,25 @@ const MINI_LABELS = {
   steps: { label: "활동량", unit: "보" },
 };
 
-// Day 1~19(콜드스타트) 동안 홈/예측상세 화면에 노출되는 카드.
-// 아직 예측은 없지만 "데이터는 이미 쌓이고 있다"는 걸 보여줘야 Day 20의 첫 예측 등장이
+// 콜드스타트 구간(예측 시작 전) 동안 홈/예측상세 화면에 노출되는 카드.
+// 아직 예측은 없지만 "데이터는 이미 쌓이고 있다"는 걸 보여줘야 첫 예측 등장이
 // 극적으로 느껴진다 — 아무것도 없다가 갑자기 나타나면 그냥 로딩처럼 보인다.
+//
+// Day 0 은 예외다. 하룻밤도 안 지나서 수집된 게 정말로 없는 상태라,
+// "수집 중"이 아니라 "시작 전"으로 문구가 달라진다.
 export default function ColdStartCard({ day, coldStartDays, wearable, compact = false, fastForward = false }) {
-  const progress = useCountUp((day / coldStartDays) * 100, { disabled: fastForward });
-  const remaining = Math.max(0, coldStartDays - day);
+  const beforeStart = !day || day < 1;
+  const collected = Math.max(0, day ?? 0);
+  const progress = useCountUp((collected / coldStartDays) * 100, { disabled: fastForward });
+  const remaining = Math.max(0, coldStartDays - collected);
 
   if (compact) {
     return (
       <div className="flex flex-col items-center gap-1 text-center">
         <Activity className="h-4 w-4 opacity-60" />
-        <p className="text-[11px] font-medium opacity-70">데이터 수집 중</p>
+        <p className="text-[11px] font-medium opacity-70">{beforeStart ? "수집 시작 전" : "데이터 수집 중"}</p>
         <p className="text-lg font-semibold">
-          {day}/{coldStartDays}
+          {collected}/{coldStartDays}
         </p>
       </div>
     );
@@ -31,17 +36,29 @@ export default function ColdStartCard({ day, coldStartDays, wearable, compact = 
     <div className="rounded-2xl border border-dashed border-black/10 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900">
       <div className="flex items-center gap-2">
         <span className="relative flex h-2.5 w-2.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-60" />
-          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-sky-400" />
+          {!beforeStart && (
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-60" />
+          )}
+          <span
+            className={`relative inline-flex h-2.5 w-2.5 rounded-full ${
+              beforeStart ? "bg-neutral-300 dark:bg-white/25" : "bg-sky-400"
+            }`}
+          />
         </span>
-        <span className="text-sm font-medium opacity-70">데이터 수집 중</span>
+        <span className="text-sm font-medium opacity-70">
+          {beforeStart ? "수집 시작 전" : "데이터 수집 중"}
+        </span>
       </div>
 
       <p className="mt-2 text-3xl font-semibold">
-        {day}<span className="text-lg opacity-50">/{coldStartDays}일</span>
+        {collected}<span className="text-lg opacity-50">/{coldStartDays}일</span>
       </p>
       <p className="mt-1 text-sm opacity-60">
-        {remaining > 0 ? `예측까지 ${remaining}일 남았어요` : "곧 첫 예측이 도착해요"}
+        {beforeStart
+          ? "아직 수집된 데이터가 없어요"
+          : remaining > 0
+            ? `예측까지 ${remaining}일 남았어요`
+            : "곧 첫 예측이 도착해요"}
       </p>
 
       <div className="mt-3 h-2 w-full rounded-full bg-neutral-100 dark:bg-white/10">
@@ -53,8 +70,17 @@ export default function ColdStartCard({ day, coldStartDays, wearable, compact = 
       </div>
 
       <p className="mt-4 rounded-xl bg-neutral-50 p-3 text-sm leading-relaxed dark:bg-white/5">
-        예측 모델이 안정적으로 작동하려면 최소 {coldStartDays}일치 웨어러블 신호가 필요해요.
-        그동안 수집된 신호는 이미 쌓이고 있어요.
+        {beforeStart ? (
+          <>
+            수면·피부온도·HRV 는 <strong>하룻밤이 지나야</strong> 확정되는 값이에요.
+            하루가 지나면 첫 데이터가 들어옵니다.
+          </>
+        ) : (
+          <>
+            예측 모델이 안정적으로 작동하려면 최소 {coldStartDays}일치 웨어러블 신호가 필요해요.
+            그동안 수집된 신호는 이미 쌓이고 있어요.
+          </>
+        )}
       </p>
 
       {wearable && (

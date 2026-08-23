@@ -4,9 +4,14 @@ import { Moon, Sun } from "lucide-react";
 import Home from "./pages/Home";
 import PredictionDetail from "./pages/PredictionDetail";
 import Calendar from "./pages/Calendar";
+import ModelPerformance from "./pages/ModelPerformance";
+import HistoryLog from "./pages/HistoryLog";
 import { NAV_ITEMS } from "./lib/navItems";
 import SimulatorBar from "./components/simulator/SimulatorBar";
+import DataSourceBadge from "./components/DataSourceBadge";
 import { useSimulationAutoplay } from "./state/useSimulationAutoplay";
+import { usePredictionSocket } from "./lib/usePredictionSocket";
+import { useSimulationStore } from "./state/simulationStore";
 
 const DEVICES = [
   { key: "pc", label: "PC" },
@@ -23,6 +28,13 @@ const THEME_STORAGE_KEY = "hormone-web:theme";
 
 function App() {
   useSimulationAutoplay();
+  usePredictionSocket();
+
+  // 백엔드가 유일한 데이터 소스다. 마운트 시 타임라인을 받아 현재 일차까지 복원한다.
+  const init = useSimulationStore((s) => s.init);
+  useEffect(() => {
+    init();
+  }, [init]);
 
   const [device, setDevice] = useState("pc");
   const [theme, setTheme] = useState(() => {
@@ -55,7 +67,11 @@ function App() {
     // 스크롤한다.
     <div className="flex h-screen flex-col overflow-hidden bg-neutral-50 dark:bg-slate-950">
       <header className="flex shrink-0 items-center justify-between border-b border-black/5 bg-white px-6 py-3 text-neutral-900 dark:border-white/5 dark:bg-slate-950 dark:text-slate-100">
-        <h1 className="text-sm font-semibold">호르몬 예측 대시보드</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-sm font-semibold">호르몬 예측 대시보드</h1>
+          {/* 지금 화면의 숫자가 어디서 나왔는지 항상 보이게 한다 (P-03) */}
+          <DataSourceBadge />
+        </div>
         <div className="flex items-center gap-2">
           <div className="flex gap-1 rounded-full bg-neutral-100 p-1 dark:bg-slate-900">
             {THEMES.map((t) => {
@@ -111,6 +127,8 @@ function App() {
               <Route path="/" element={<Home device={device} />} />
               <Route path="/prediction" element={<PredictionDetail device={device} theme={theme} />} />
               <Route path="/calendar" element={<Calendar device={device} />} />
+              <Route path="/model" element={<ModelPerformance device={device} theme={theme} />} />
+              <Route path="/history" element={<HistoryLog device={device} />} />
             </Routes>
           </main>
 

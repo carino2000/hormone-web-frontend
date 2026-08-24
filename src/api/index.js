@@ -12,6 +12,8 @@ import {
 } from "../data/simulationSource";
 import { PHASE_LABELS_KO } from "../lib/phase";
 import { fetchJobsByDate } from "../data/apiSource";
+import { endpoints } from "./endpoints";
+import { httpGet, httpPost } from "./http";
 import {
   HOME_VITAL_KEYS,
   WEARABLE_BY_KEY,
@@ -44,43 +46,6 @@ export const VITALS_DECIMALS = Object.fromEntries(
  */
 export const isBeforeStart = (day) => !day || day < 1;
 
-/**
- * 예측 진행 상태. 화면 분기의 단일 기준이다.
- *
- * ★ 예전에는 화면마다 `!prediction` 하나로 "콜드스타트인가"를 판단했는데, 그러면
- *   **"아직 한 번도 예측이 없다"와 "오늘 것이 아직 안 왔다"가 같은 취급**을 받는다.
- *   백엔드 advance 는 202 를 즉시 주고 예측은 비동기로 돌리므로(DemoService 주석 참고),
- *   하루 넘기기 직후에는 항상 후자 상태를 거친다. 그래서 Day 26 에서 하루를 넘기면
- *   26일치 예측을 이미 갖고 있는데도 화면이 "데이터 수집 중"으로 돌아갔다가 왔다.
- *   Mock 은 순식간이라 깜빡임 정도지만, 파이썬 모델이 붙으면 몇 초짜리가 된다.
- *
- * | state          | 뜻 | 화면 |
- * |---|---|---|
- * | `before_start` | Day 0. 하룻밤도 안 지남 | 시작 전 카드 |
- * | `collecting`   | 예측이 아직 한 번도 없음 | 콜드스타트 카드 |
- * | `pending`      | 예측 이력은 있는데 오늘 것이 아직 안 옴 | **직전 예측 유지 + 계산중 표시** |
- * | `ready`        | 오늘 예측 있음 | 정상 |
- */
-export async function getPredictionStatus(day) {
-  await ensureLoaded();
-
-  if (isBeforeStart(day)) {
-    return { state: "before_start", predictionDay: null, isStale: false };
-  }
-  if (getDaySnapshot(day)?.prediction) {
-    return { state: "ready", predictionDay: day, isStale: false };
-  }
-
-  const withPrediction = getDaysUpTo(day).filter((d) => d.prediction);
-  if (withPrediction.length === 0) {
-    return { state: "collecting", predictionDay: null, isStale: false };
-  }
-  return {
-    state: "pending",
-    predictionDay: withPrediction[withPrediction.length - 1].day,
-    isStale: true,
-  };
-}
 
 /** pending 이면 직전 예측이 있는 스냅샷을, 아니면 그날 스냅샷을 준다. */
 function snapshotForPrediction(day) {
@@ -118,8 +83,6 @@ export async function getPredictionSummary(day) {
     phase: prediction.phase,
     phase_label_ko: prediction.phaseLabelKo ?? PHASE_LABELS_KO[prediction.phase],
     confidence: prediction.confidence,
-    days_to_next_event: prediction.nextEvent?.daysTo ?? null,
-    next_event_label: prediction.nextEvent?.label ?? null,
     summary_text: prediction.summaryText ?? null,
     isColdStart: false,
     // ★ pending 일 때 이 값이 오늘이 아니다. 화면은 반드시 "언제 기준인지"를 밝혀야 한다 —
@@ -223,10 +186,12 @@ export async function getModelInputs(day) {
     // Day 0 은 "측정 실패"가 아니라 "아직 수집 전"이다. 둘을 구분하지 않으면
     // 화면이 "44개가 측정되지 않았어요"라고 말하는데, 시계가 고장난 것처럼 읽힌다.
     beforeStart: isBeforeStart(day),
-    // 모델 입력은 47개 = 웨어러블 44 + 정적 3.
-    // 정적 3개는 birthYear / ageOfFirstMenarche / ethnicity 이고
-    // (엑셀 주황색 = 이미 DB 에 있는 값), 백엔드 ModelInputBuilder 가 붙인다.
-    // 타임라인 응답에는 안 실려 오므로 여기서는 개수만 센다.
+    // 모델이 보는 컬럼은 47개 = 웨어러블 44 + 정적 3
+    // (정적 3개 = birthYear / ageOfFirstMenarche / ethnicity, 엑셀 주황색).
+    //
+    // ★ 백엔드가 이걸 모델로 "보내는" 게 아니다. 요청은 일차 정수 하나뿐이고
+    //   모델이 같은 원본 CSV 를 직접 읽는다. 이 패널은 "우리 DB 에 뭐가 쌓였고
+    //   모델이 무엇을 보는가"를 같이 보여주는 것이지 전송 내역이 아니다.
     wearableCount: items.length,
     staticCount: 3,
     totalCount: items.length + 3,
@@ -258,18 +223,17 @@ export async function getHormoneSeries(day) {
 }
 
 /**
- * 지금 화면의 예측이 무엇으로 계산됐는지 (P-03).
- * modelVersion 이 `mock-` 으로 시작하면 백엔드 내장 Mock 이다.
+ * 지금 화면의 예측이 어느 모델 버전으로 계산됐는지 (P-03).
+ *
+ * 모델이 modelVersion 을 안 주면 null 이고, 배지가 "예측 대기"로 남는다.
  */
 export async function getModelInfo() {
   await ensureLoaded();
   const withPrediction = getAllDays()
     .filter((d) => d.prediction?.modelVersion)
     .pop();
-  const modelVersion = withPrediction?.prediction?.modelVersion ?? null;
   return {
-    modelVersion,
-    isMock: modelVersion == null || modelVersion.startsWith("mock-"),
+    modelVersion: withPrediction?.prediction?.modelVersion ?? null,
     source: "backend",
   };
 }
@@ -277,8 +241,10 @@ export async function getModelInfo() {
 /**
  * 전체 구간 정확도 (P-03 모델 성능 탭).
  *
- * ★ Mock 일 때의 수치는 모델 성능이 아니다. 화면에서 반드시 그렇게 표시해야 한다.
- *   Mock 은 실측에 ±8% 노이즈를 얹는 구조라 잘 맞는 게 당연하다.
+ * 예측(모델 출력)과 실측(시드의 truth)을 비교해 백엔드 데이터만으로 계산한다.
+ *
+ * ★ 이 참가자(id=22 / 2024)가 학습에서 제외됐는지는 모델팀 확인 사항이다.
+ *   제외되지 않았다면 여기 수치가 부풀려진다 — 화면이 그걸 알아낼 방법은 없다.
  */
 export async function getAccuracySummary(day) {
   await ensureLoaded();
@@ -477,9 +443,8 @@ export async function getHistoryLog(day) {
           status: job.status ?? null,
           latencyMs: job.latencyMs ?? null,
           errorMessage: job.errorMessage ?? null,
-          historyDays: job.historyDays ?? null,
-          // 44 가 아니면 그 자체가 버그 신호다 (NON_NULL 직렬화로 40개 나간 전례가 있다)
-          featureCount: job.featureCount ?? null,
+          // 파이썬에 실제로 보낸 일차. 백엔드 Day 와 다를 수 있다(day-offset 보정).
+          sentDay: job.sentDay ?? null,
           responsePreview: job.responsePreview ?? null,
           startedAt: job.startedAt ?? null,
         },
@@ -497,7 +462,6 @@ export async function getHistoryLog(day) {
         phasePredicted: p?.phase ?? null,
         phaseActual: t?.phase ?? null,
         phaseMatched: p?.phase && t?.phase ? p.phase === t.phase : null,
-        nextPeriod: p?.nextPeriod ?? null,
         hormones: [
           { key: "lh", label: "LH", unit: "mIU/mL", ...hormone("lh") },
           { key: "estrogen", label: "Estrogen", unit: "ng/mL", ...hormone("estrogen") },
@@ -513,17 +477,28 @@ export async function getContributions(day) {
   return snapshotForPrediction(day)?.prediction?.contributions ?? [];
 }
 
-export async function getNextEvents(day) {
+/**
+ * 예측 상세가 "예측이 하나라도 있는가"를 판정하고 오늘 예측 요약을 얻는 창구.
+ *
+ * ★ 이름이 예전에 getNextEvents 였다. 다음 월경 예정일을 다루던 함수인데,
+ *   모델이 오늘자 phase 만 준다고 해서 그 기능을 뺐다. 지금은 phase·확신도·모델버전만 준다.
+ *
+ * null 이면 **진짜 콜드스타트**다 (예측이 한 번도 없었음). pending 은 null 이 아니다 —
+ * 직전 예측으로 대체해서 준다.
+ */
+export async function getTodayPrediction(day) {
   await ensureLoaded();
   if (isBeforeStart(day)) return null;
 
   const source = snapshotForPrediction(day);
   if (!source) return null;   // 진짜 콜드스타트
 
+  const p = source.prediction;
   return {
-    next_event_label: source.prediction.nextEvent?.label ?? null,
-    days_to_next_event: source.prediction.nextEvent?.daysTo ?? null,
-    next_period: source.prediction.nextPeriod ?? null,
+    phase: p.phase ?? null,
+    phase_label_ko: p.phaseLabelKo ?? PHASE_LABELS_KO[p.phase] ?? null,
+    confidence: p.confidence ?? null,
+    modelVersion: p.modelVersion ?? null,
     isPending: source.day !== day,
     predictionDay: source.day,
     predictionDate: source.date,
@@ -542,11 +517,52 @@ export async function getCalendar(day) {
     return { date: d.date, status: "predicted", phase: d.prediction.phase };
   });
 
+  // 다음 월경 예정일은 모델이 주지 않는다(합의 하에 제외). 오늘 단계만 내려준다.
   const current = getDaySnapshot(day);
   return {
     days,
     coldStartDays,
-    next_period_estimate: current?.prediction?.nextPeriod?.date ?? null,
-    next_period_range: current?.prediction?.nextPeriod ?? null,
+    today_phase: current?.prediction?.phase ?? null,
+    today_phase_label_ko:
+      current?.prediction?.phaseLabelKo ?? PHASE_LABELS_KO[current?.prediction?.phase] ?? null,
   };
+}
+
+// ---------------------------------------------------------------------------
+// 오늘의 조언 (Claude API)
+//
+// 다른 API 와 달리 simulationSource 캐시를 타지 않는다. 타임라인 스냅샷과 달리
+// 조언은 생성 시점이 따로 있고(하루 넘기기 직후), 실패/재시도 상태를 그때그때
+// 반영해야 하기 때문이다.
+// ---------------------------------------------------------------------------
+
+/** 기능이 켜져 있는지. 키가 없으면 화면이 토글을 비활성화한다. */
+export async function getAdviceStatus() {
+  try {
+    return await httpGet(endpoints.adviceStatus());
+  } catch {
+    return { enabled: false, model: null, historyDays: null };
+  }
+}
+
+/** 지난 조언 전부 (최신순). */
+export async function getAdviceList() {
+  try {
+    return await httpGet(endpoints.adviceList());
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * 오늘 조언 생성. 이미 성공한 날은 백엔드가 재호출하지 않고 저장된 걸 준다.
+ *
+ * ★ 첫 호출은 15~20초 걸린다 (최근 30일 웨어러블 1만 토큰을 읽는다).
+ *   호출부는 await 로 화면을 막지 말고 로딩 상태로 처리할 것.
+ */
+export async function generateAdvice({ force = false } = {}) {
+  // ★ 기본 타임아웃(10초)으로는 잘린다. 최근 30일 웨어러블 약 1만 토큰을 읽고
+  //   조언을 쓰는 데 15~20초가 걸린다 (실측 16.9초). 백엔드 read-timeout 은 60초라
+  //   프론트를 그보다 넉넉히 잡아 백엔드가 먼저 판정하게 둔다.
+  return httpPost(endpoints.adviceGenerate(undefined, force), undefined, { timeoutMs: 90_000 });
 }

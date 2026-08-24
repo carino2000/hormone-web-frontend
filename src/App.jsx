@@ -6,6 +6,7 @@ import PredictionDetail from "./pages/PredictionDetail";
 import Calendar from "./pages/Calendar";
 import ModelPerformance from "./pages/ModelPerformance";
 import HistoryLog from "./pages/HistoryLog";
+import Advice from "./pages/Advice";
 import { NAV_ITEMS } from "./lib/navItems";
 import SimulatorBar from "./components/simulator/SimulatorBar";
 import DataSourceBadge from "./components/DataSourceBadge";
@@ -128,6 +129,7 @@ function App() {
               <Route path="/prediction" element={<PredictionDetail device={device} theme={theme} />} />
               <Route path="/calendar" element={<Calendar device={device} />} />
               <Route path="/model" element={<ModelPerformance device={device} theme={theme} />} />
+              <Route path="/advice" element={<Advice device={device} />} />
               <Route path="/history" element={<HistoryLog device={device} />} />
             </Routes>
           </main>

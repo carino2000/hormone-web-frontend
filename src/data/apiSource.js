@@ -34,7 +34,7 @@ function normalizeWearable(wearable) {
 }
 
 // 백엔드 PredictionDto -> 픽스처의 days[].prediction 모양
-function normalizePrediction(p, dayIndex) {
+function normalizePrediction(p) {
   if (!p) return null;
   return {
     phase: p.phase ?? null,
@@ -43,16 +43,8 @@ function normalizePrediction(p, dayIndex) {
     lh: num(p.lh),
     estrogen: num(p.estrogen),
     pdg: num(p.pdg),
-    // 프론트 목업은 nextEvent 를 갖고 있지만 백엔드는 안 준다.
-    // 다음 월경 예정일로부터 D-day 를 계산해서 채운다.
-    nextEvent: buildNextEvent(p, dayIndex),
-    nextPeriod: p.nextPeriod
-      ? {
-          date: p.nextPeriod.date ?? null,
-          rangeStart: p.nextPeriod.rangeStart ?? null,
-          rangeEnd: p.nextPeriod.rangeEnd ?? null,
-        }
-      : null,
+    // 다음 월경 예정일(nextPeriod)은 받지 않는다 — 모델이 오늘자 phase 만 알 수 있어서
+    // 합의 하에 기능을 뺐다. 되살리려면 백엔드 PredictionResult 부터 되돌려야 한다.
     summaryText: buildSummaryText(p),
     contributions: (p.contributions ?? []).map((c) => ({
       signal: c.signal ?? c.feature,
@@ -60,19 +52,11 @@ function normalizePrediction(p, dayIndex) {
       weight: num(c.weight),
       direction: c.direction,
     })),
-    // 데이터 출처 배지(P-03)의 판정 근거. `mock-` 으로 시작하면 내장 Mock 예측기다.
-    // 이걸 빠뜨리면 배지가 Mock 을 구분하지 못해 "실제 모델"처럼 보인다.
+    // 헤더 배지가 표시하는 모델 버전. 모델이 안 주면 null 이고 배지가 "예측 대기"로 남는다.
     modelVersion: p.modelVersion ?? null,
   };
 }
 
-function buildNextEvent(p, dayIndex) {
-  if (!p.nextPeriod?.date || !p.date) return null;
-  const from = new Date(p.date);
-  const to = new Date(p.nextPeriod.date);
-  const daysTo = Math.max(0, Math.round((to - from) / 86_400_000));
-  return { label: "다음 월경 예상", daysTo, dayIndex };
-}
 
 // 모델이 요약 문구를 주지 않으므로 phase + 최상위 기여 신호로 조합한다.
 // 단정형을 피하고 "추정" 어조를 유지한다 (안전 원칙).
@@ -99,7 +83,7 @@ export function normalizeTimeline(timeline) {
       day: d.day,
       date: d.date,
       wearable: normalizeWearable(d.wearable),
-      prediction: normalizePrediction(d.prediction, d.day),
+      prediction: normalizePrediction(d.prediction),
       truth: normalizeTruth(d.truth),
     })),
   };

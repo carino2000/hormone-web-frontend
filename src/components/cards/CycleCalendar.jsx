@@ -5,7 +5,6 @@ import PhaseLegend from "../calendar/PhaseLegend";
 import DiaryPanel from "../calendar/DiaryPanel";
 import { addMonths, dateKeyOf } from "../../lib/calendarGrid";
 import { useCalendarNotes } from "../../lib/useCalendarNotes";
-import { formatKoreanDate } from "../../lib/formatDate";
 
 const SHEET_TRANSITION_MS = 300;
 
@@ -147,10 +146,12 @@ export default function CycleCalendar({ calendar, device = "pc", currentDay, cur
         </p>
       )}
 
-      {calendar.next_period_estimate ? (
+      {/* 예전엔 "다음 월경 예상" 이 여기 있었다. 모델이 오늘자 phase 만 준다고 해서
+          그 기능을 합의 하에 뺐고, 같은 자리에 오늘 단계를 보여준다. */}
+      {calendar.today_phase_label_ko ? (
         <div className="mt-4 flex items-center gap-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-500 dark:bg-amber-400/10 dark:text-amber-400">
           <Sparkles className="h-4 w-4 shrink-0" />
-          다음 월경 예상: <span className="font-semibold">{formatKoreanDate(calendar.next_period_estimate)}</span>
+          오늘은 <span className="font-semibold">{calendar.today_phase_label_ko}</span> 입니다
         </div>
       ) : (
         <div className="mt-4 flex items-center gap-2 rounded-xl bg-sky-50 p-3 text-sm text-sky-500 dark:bg-sky-400/10 dark:text-sky-300">

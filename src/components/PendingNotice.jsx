@@ -8,12 +8,33 @@
  * 대신 지금 보이는 게 오늘 것이 아니라는 걸 반드시 밝힌다. 어제 예측을 오늘 것처럼
  * 두면 그건 거짓말이고, 대표 시연에서 들키면 신뢰가 통째로 날아간다.
  */
-export default function PendingNotice({ day, predictionDay, compact = false }) {
+export default function PendingNotice({ day, predictionDay, error = null, compact = false }) {
+  // ★ 실패와 대기를 반드시 구분한다. 내장 Mock 을 제거해서 폴백이 없으므로,
+  //   파이썬이 끊기면 예측이 영영 안 온다. 그걸 "계산 중"으로 두면 발표자가
+  //   기다리기만 하다가 원인을 못 찾는다.
+  const failed = Boolean(error);
+
   if (compact) {
     return (
-      <p className="text-[10px] text-amber-600 dark:text-amber-400">
-        <Dot /> Day {day} 계산 중
+      <p className={`text-[10px] ${failed ? "text-rose-500" : "text-amber-600 dark:text-amber-400"}`}>
+        <Dot failed={failed} /> Day {day} {failed ? "예측 실패" : "계산 중"}
       </p>
+    );
+  }
+
+  if (failed) {
+    return (
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-rose-300/50 bg-rose-50 px-3 py-2 text-[11px] dark:border-rose-400/30 dark:bg-rose-400/10">
+        <span className="font-medium text-rose-700 dark:text-rose-300">
+          <Dot failed /> Day {day} 예측에 실패했어요
+        </span>
+        <span className="text-rose-700/70 dark:text-rose-300/70">{error}</span>
+        {predictionDay != null && (
+          <span className="text-rose-700/70 dark:text-rose-300/70">
+            · 지금 보이는 건 Day {predictionDay} 기준입니다
+          </span>
+        )}
+      </div>
     );
   }
 
@@ -31,8 +52,12 @@ export default function PendingNotice({ day, predictionDay, compact = false }) {
   );
 }
 
-function Dot() {
+function Dot({ failed = false }) {
   return (
-    <span className="mr-1 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500 align-middle dark:bg-amber-400" />
+    <span
+      className={`mr-1 inline-block h-1.5 w-1.5 rounded-full align-middle ${
+        failed ? "bg-rose-500" : "animate-pulse bg-amber-500 dark:bg-amber-400"
+      }`}
+    />
   );
 }

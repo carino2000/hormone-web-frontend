@@ -6,7 +6,6 @@ import PCFrame from "../components/devices/PCFrame";
 import MobileFrame from "../components/devices/MobileFrame";
 import WatchFrame from "../components/devices/WatchFrame";
 import CycleCalendar from "../components/cards/CycleCalendar";
-import { formatKoreanDate } from "../lib/formatDate";
 
 const FRAMES = { pc: PCFrame, mobile: MobileFrame, watch: WatchFrame };
 
@@ -31,9 +30,9 @@ export default function Calendar({ device }) {
     return (
       <Frame>
         <div className="text-center">
-          <p className="text-[10px] opacity-70">다음 월경</p>
+          <p className="text-[10px] opacity-70">오늘의 단계</p>
           <p className="text-sm font-semibold">
-            {calendar.next_period_estimate ? formatKoreanDate(calendar.next_period_estimate) : `수집 중 ${currentDay}/${coldStartDays}`}
+            {calendar.today_phase_label_ko ?? `수집 중 ${currentDay}/${coldStartDays}`}
           </p>
         </div>
       </Frame>

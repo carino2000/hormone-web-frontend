@@ -10,6 +10,12 @@ export const endpoints = {
   demoTimeline: (userId = DEMO_USER_ID) => `${API_BASE}/api/demo/users/${userId}/timeline`,
   demoJobs: (userId = DEMO_USER_ID) => `${API_BASE}/api/demo/users/${userId}/jobs`,
   latestPrediction: (userId = DEMO_USER_ID) => `${API_BASE}/api/predictions/users/${userId}/latest`,
+
+  // 오늘의 조언 (Claude API)
+  adviceStatus: () => `${API_BASE}/api/advice/status`,
+  adviceList: (userId = DEMO_USER_ID) => `${API_BASE}/api/advice/users/${userId}`,
+  adviceGenerate: (userId = DEMO_USER_ID, force = false) =>
+    `${API_BASE}/api/advice/users/${userId}?force=${force}`,
 };
 
 // 백엔드가 push 하는 웹소켓 토픽. 백엔드 app.ws.prediction-topic-prefix 와 반드시 일치해야 한다.

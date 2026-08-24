@@ -6,7 +6,6 @@ import PCFrame from "../components/devices/PCFrame";
 import MobileFrame from "../components/devices/MobileFrame";
 import WatchFrame from "../components/devices/WatchFrame";
 import { PHASE_LABELS_KO } from "../lib/phase";
-import { formatKoreanDate } from "../lib/formatDate";
 
 const FRAMES = { pc: PCFrame, mobile: MobileFrame, watch: WatchFrame };
 
@@ -341,14 +340,6 @@ function LogDetail({ row }) {
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[10px] opacity-50">
               <span>모델 {row.modelVersion ?? "—"}</span>
               {row.confidence != null && <span>확신도 {Math.round(row.confidence * 100)}%</span>}
-              {row.nextPeriod?.date && (
-                <span>
-                  다음 월경 예상 {formatKoreanDate(row.nextPeriod.date)}
-                  {row.nextPeriod.rangeStart && row.nextPeriod.rangeEnd && (
-                    <> ({row.nextPeriod.rangeStart} ~ {row.nextPeriod.rangeEnd})</>
-                  )}
-                </span>
-              )}
             </div>
           </>
         ) : row.job?.status === "FAILED" ? (
@@ -368,7 +359,7 @@ function LogDetail({ row }) {
 
       {/* ---------- 요청(job) ---------- */}
       {row.job && (
-        <Section title="요청 — 모델에 어떻게 보냈나">
+        <Section title="요청 — 모델에 무엇을 보냈나">
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
             <Field label="상태">
               <span
@@ -384,12 +375,11 @@ function LogDetail({ row }) {
               </span>
             </Field>
             {row.job.latencyMs != null && <Field label="소요">{row.job.latencyMs}ms</Field>}
-            {row.job.historyDays != null && <Field label="보낸 일수">{row.job.historyDays}일</Field>}
-            {row.job.featureCount != null && (
-              <Field label="피처">
-                {/* 44 가 아니면 빨갛게. 직렬화 설정 하나로 40개가 나간 적이 있다 */}
-                <span className={row.job.featureCount === row.xTotal ? "" : "font-semibold text-rose-500"}>
-                  {row.job.featureCount}개
+            {row.job.sentDay != null && (
+              <Field label="보낸 일차">
+                {/* 백엔드 Day 와 다르면 day-offset 보정이 걸린 것이다. 다르다고 오류는 아니다 */}
+                <span className={row.job.sentDay === row.day ? "" : "text-amber-500"}>
+                  day={row.job.sentDay}
                 </span>
               </Field>
             )}
@@ -411,8 +401,7 @@ function LogDetail({ row }) {
             </p>
           ) : (
             <p className="mt-2 text-[10px] opacity-35">
-              응답 원문 없음 — 내장 Mock 예측기는 HTTP 를 타지 않아 원문이 남지 않습니다.
-              파이썬 서버를 붙이면 여기에 응답 앞부분이 찍힙니다.
+              응답 원문이 기록되지 않았습니다.
             </p>
           )}
         </Section>

@@ -10,7 +10,6 @@ import {
   YAxis,
   ZAxis,
 } from "recharts";
-import { AlertTriangle } from "lucide-react";
 import { getAccuracySummary, getModelInfo } from "../api";
 import { useSimulationStore } from "../state/simulationStore";
 import PCFrame from "../components/devices/PCFrame";
@@ -26,9 +25,10 @@ const PHASES = ["Menstrual", "Follicular", "Fertility", "Luteal"];
  * 기존 3탭은 "제품은 이렇게 생깁니다", 이 탭은 "모델은 이만큼 맞힙니다".
  * 대표가 실제로 보고 싶어 하는 건 후자다.
  *
- * ★ Mock 일 때는 모든 수치를 회색으로 약화시키고 경고 배너를 띄운다.
- *   Mock 은 실측에 노이즈를 얹는 구조라 잘 맞는 게 당연하고, 이걸 모델 성능으로
- *   제시하면 사실이 아닌 것을 보여주는 것이다.
+ * ★ 여기 수치는 예측(모델 출력)과 실측(시드 truth)을 비교해 만든 것이다.
+ *   실측은 Mira 기기 측정값이고 모델 입력에 들어가지 않았다.
+ *   다만 이 참가자가 학습에서 제외됐는지는 모델팀 확인 사항이다 — 제외되지 않았다면
+ *   수치가 부풀려지는데 화면이 그걸 알아낼 방법은 없다. 아래 "데이터 출처"에 명시한다.
  */
 export default function ModelPerformance({ device, theme }) {
   const currentDay = useSimulationStore((s) => s.currentDay);
@@ -52,7 +52,6 @@ export default function ModelPerformance({ device, theme }) {
 
   const { summary, info } = loaded;
   const Frame = FRAMES[device];
-  const isMock = info?.isMock ?? true;
 
   if (device === "watch") {
     return (
@@ -78,12 +77,10 @@ export default function ModelPerformance({ device, theme }) {
     );
   }
 
-  const dim = isMock ? "opacity-55" : "";
 
   return (
     <Frame>
       <div className="flex flex-col gap-4">
-        {isMock && <MockWarning />}
 
         {/* 요약 */}
         <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-slate-900">
@@ -94,7 +91,7 @@ export default function ModelPerformance({ device, theme }) {
             </span>
           </div>
 
-          <div className={`mt-4 grid grid-cols-2 gap-4 ${dim}`}>
+          <div className={`mt-4 grid grid-cols-2 gap-4`}>
             <Metric
               label="주기 단계 정확도"
               value={summary.phase.accuracy == null ? "—" : `${summary.phase.accuracy.toFixed(1)}%`}
@@ -109,7 +106,7 @@ export default function ModelPerformance({ device, theme }) {
         </div>
 
         {/* 호르몬별 오차 */}
-        <div className={`rounded-2xl border border-black/5 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-slate-900 ${dim}`}>
+        <div className={`rounded-2xl border border-black/5 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-slate-900`}>
           <h3 className="text-sm font-medium opacity-70">호르몬별 오차</h3>
           <table className="mt-3 w-full text-xs">
             <thead>
@@ -144,7 +141,7 @@ export default function ModelPerformance({ device, theme }) {
         </div>
 
         {/* 산점도 */}
-        <div className={`rounded-2xl border border-black/5 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-slate-900 ${dim}`}>
+        <div className={`rounded-2xl border border-black/5 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-slate-900`}>
           <h3 className="text-sm font-medium opacity-70">예측값 vs 실측값</h3>
           <p className="mt-1 text-[11px] opacity-50">점이 대각선에 가까울수록 정확합니다.</p>
           <div className="mt-3 grid grid-cols-2 gap-4">
@@ -160,7 +157,7 @@ export default function ModelPerformance({ device, theme }) {
         </div>
 
         {/* 혼동행렬 */}
-        <div className={`rounded-2xl border border-black/5 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-slate-900 ${dim}`}>
+        <div className={`rounded-2xl border border-black/5 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-slate-900`}>
           <h3 className="text-sm font-medium opacity-70">주기 단계 혼동행렬</h3>
           <p className="mt-1 text-[11px] opacity-50">행 = 실측, 열 = 예측. 대각선이 정답입니다.</p>
           <table className="mt-3 w-full text-xs">
@@ -202,31 +199,22 @@ export default function ModelPerformance({ device, theme }) {
           </table>
         </div>
 
-        <DataProvenance />
+        <DataProvenance modelVersion={info?.modelVersion} />
       </div>
     </Frame>
   );
 }
 
-function MockWarning() {
-  return (
-    <div className="flex items-start gap-2 rounded-xl border border-amber-300/50 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-900 dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-200">
-      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-      <p>
-        <strong>아래 수치는 모델 성능이 아닙니다.</strong> 현재 백엔드 내장 Mock 예측기가 동작 중이며,
-        이 예측기는 실측값에 오차를 얹어 만드는 구조라 잘 맞는 것이 당연합니다.
-        <span className="block opacity-80">
-          화면 구조를 보여주기 위한 예시 값입니다. 실제 예측모델을 연결하면 이 배너가 사라집니다.
-        </span>
-      </p>
-    </div>
-  );
-}
 
-function DataProvenance() {
+function DataProvenance({ modelVersion }) {
   return (
     <div className="rounded-2xl border border-black/5 bg-neutral-50 p-4 text-[11px] leading-relaxed opacity-70 dark:border-white/5 dark:bg-slate-800/50">
-      <p className="font-medium">데이터 출처</p>
+      <p className="font-medium">
+        데이터 출처
+        {modelVersion && (
+          <span className="ml-2 font-normal opacity-60">· 모델 {modelVersion}</span>
+        )}
+      </p>
       <p className="mt-1">
         mcPHASES 공개 데이터셋 · 참가자 22 · 2024 관측구간 · 90일 연속.
         <br />

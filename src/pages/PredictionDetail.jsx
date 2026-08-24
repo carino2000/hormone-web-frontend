@@ -4,7 +4,7 @@ import {
   getContributions,
   getHormoneSeries,
   getModelInputs,
-  getNextEvents,
+  getTodayPrediction,
   getWearableSeries,
 } from "../api";
 import { useSimulationStore } from "../state/simulationStore";
@@ -18,7 +18,6 @@ import ContributionBars from "../components/cards/ContributionBars";
 import ColdStartCard from "../components/cards/ColdStartCard";
 import ModelInputPanel from "../components/cards/ModelInputPanel";
 import PendingNotice from "../components/PendingNotice";
-import { formatKoreanDate } from "../lib/formatDate";
 
 const FRAMES = { pc: PCFrame, mobile: MobileFrame, watch: WatchFrame };
 
@@ -26,6 +25,7 @@ export default function PredictionDetail({ device, theme }) {
   const currentDay = useSimulationStore((s) => s.currentDay);
   const dataRevision = useSimulationStore((s) => s.dataRevision);
   const coldStartDays = useSimulationStore((s) => s.coldStartDays);
+  const predictionError = useSimulationStore((s) => s.predictionError);
   const fastForward = useSimulationStore((s) => s.isPlaying && s.speed >= 4);
 
   const key = `${currentDay}|${dataRevision}`;
@@ -37,12 +37,12 @@ export default function PredictionDetail({ device, theme }) {
       getHormoneSeries(currentDay),
       getWearableSeries(currentDay),
       getContributions(currentDay),
-      getNextEvents(currentDay),
+      getTodayPrediction(currentDay),
       getAccuracyToday(currentDay),
       getModelInputs(currentDay),
-    ]).then(([series, wearable, contributions, nextEvents, accuracy, modelInputs]) => {
+    ]).then(([series, wearable, contributions, today, accuracy, modelInputs]) => {
       if (!cancelled) {
-        setLoaded({ key, series, wearable, contributions, nextEvents, accuracy, modelInputs });
+        setLoaded({ key, series, wearable, contributions, today, accuracy, modelInputs });
       }
     });
     return () => {
@@ -50,7 +50,7 @@ export default function PredictionDetail({ device, theme }) {
     };
   }, [key, currentDay]);
 
-  const { series, wearable, contributions, nextEvents, accuracy, modelInputs } = loaded;
+  const { series, wearable, contributions, today, accuracy, modelInputs } = loaded;
   const Frame = FRAMES[device];
 
   if (!series) {
@@ -61,10 +61,10 @@ export default function PredictionDetail({ device, theme }) {
     );
   }
 
-  // ★ nextEvents 는 pending 일 때 직전 예측으로 대체돼 온다(api/index.js getNextEvents).
+  // ★ today 는 pending 일 때 직전 예측으로 대체돼 온다(api/index.js getTodayPrediction).
   //   null 이면 진짜로 한 번도 예측이 없었던 것 = 콜드스타트다.
-  const coldStart = !nextEvents;
-  const pending = nextEvents?.isPending === true;
+  const coldStart = !today;
+  const pending = today?.isPending === true;
 
   if (device === "watch") {
     return (
@@ -73,10 +73,15 @@ export default function PredictionDetail({ device, theme }) {
           <ColdStartCard day={currentDay} coldStartDays={coldStartDays} compact fastForward={fastForward} />
         ) : (
           <div className="text-center">
-            <p className="text-[10px] opacity-70">{nextEvents.next_event_label}</p>
-            <p className="text-sm font-semibold">D-{nextEvents.days_to_next_event}</p>
+            <p className="text-[10px] opacity-70">오늘의 단계</p>
+            <p className="text-sm font-semibold">{today.phase_label_ko ?? "—"}</p>
             {pending && (
-              <PendingNotice day={currentDay} predictionDay={nextEvents.predictionDay} compact />
+              <PendingNotice
+                day={currentDay}
+                predictionDay={today.predictionDay}
+                error={predictionError?.day === currentDay ? predictionError.message : null}
+                compact
+              />
             )}
           </div>
         )}
@@ -100,7 +105,13 @@ export default function PredictionDetail({ device, theme }) {
   return (
     <Frame>
       <div className="flex flex-col gap-4">
-        {pending && <PendingNotice day={currentDay} predictionDay={nextEvents.predictionDay} />}
+        {pending && (
+          <PendingNotice
+            day={currentDay}
+            predictionDay={today.predictionDay}
+            error={predictionError?.day === currentDay ? predictionError.message : null}
+          />
+        )}
         {/* 호르몬 곡선과 웨어러블 신호는 반드시 세로로 붙인다.
             좌우로 놓으면 X축이 정렬되지 않아 "서지 시점에 HRV가 떨어진다"는 대응이 안 보인다. */}
         <HormoneChart data={series} theme={theme} fastForward={fastForward} />
@@ -112,22 +123,20 @@ export default function PredictionDetail({ device, theme }) {
         <div className={device === "pc" ? "grid grid-cols-2 gap-4" : "flex flex-col gap-4"}>
           <AccuracyCard accuracy={accuracy} />
           <ContributionBars contributions={contributions} fastForward={fastForward} />
+          {/* 예전엔 "다음 이벤트 예측"(다음 월경 D-day) 카드였다. 모델이 오늘자 phase 만
+              준다고 해서 그 기능을 뺐고, 자리를 비우면 2열 그리드가 출렁이므로
+              모델이 실제로 주는 것(단계·확신도·버전)을 보여주는 카드로 바꿨다. */}
           <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-slate-900">
-            <h3 className="text-sm font-medium opacity-70">다음 이벤트 예측</h3>
-            <p className="mt-2 text-sm">
-              {nextEvents.next_event_label}: D-{nextEvents.days_to_next_event}
-            </p>
-            {nextEvents.next_period && (
-              <>
-                <p className="mt-1 text-sm">
-                  다음 월경 예상: {formatKoreanDate(nextEvents.next_period.date)}
-                </p>
-                <p className="mt-1 text-xs opacity-60">
-                  예상 범위 {formatKoreanDate(nextEvents.next_period.rangeStart)} ~{" "}
-                  {formatKoreanDate(nextEvents.next_period.rangeEnd)}
-                </p>
-              </>
+            <h3 className="text-sm font-medium opacity-70">오늘의 예측</h3>
+            <p className="mt-2 text-2xl font-semibold">{today.phase_label_ko ?? "—"}</p>
+            {today.confidence != null && (
+              <p className="mt-1 text-sm opacity-60">
+                확신도 {Math.round(today.confidence * 100)}%
+              </p>
             )}
+            <p className="mt-3 text-[11px] opacity-40">
+              모델 {today.modelVersion ?? "—"}
+            </p>
           </div>
         </div>
       </div>

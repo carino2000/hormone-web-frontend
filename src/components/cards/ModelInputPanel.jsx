@@ -32,7 +32,7 @@ export default function ModelInputPanel({ inputs, defaultOpen = false, variant =
     <div className="@container rounded-2xl border border-black/5 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-slate-900">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="text-sm font-medium opacity-70">
-          {isBody ? "지난 하루 몸 상태 — 전체 신호" : "모델 입력 신호"}
+          {isBody ? "지난 하루 몸 상태 — 전체 신호" : "모델이 보는 신호"}
         </h3>
         <button
           type="button"
@@ -68,7 +68,7 @@ export default function ModelInputPanel({ inputs, defaultOpen = false, variant =
           <p className="mt-2 text-sm">
             <span className="text-2xl font-semibold tabular-nums">{totalCount}</span>
             <span className="ml-1.5 text-xs opacity-60">
-              개 = 웨어러블 {wearableCount} + 정적 {staticCount}
+              개 컬럼 = 웨어러블 {wearableCount} + 정적 {staticCount}
             </span>
           </p>
           <p className="mt-1 text-[11px] opacity-60">
@@ -142,10 +142,16 @@ export default function ModelInputPanel({ inputs, defaultOpen = false, variant =
           </>
         ) : (
           <>
-            회색 칸은 그날 측정되지 않은 신호입니다.{" "}
-            <span className="font-medium">결측은 0으로 채우지 않고 비운 채로 모델에 전달합니다</span> —
-            웨어러블 데이터는 결측이 예외가 아니라 기본 상태라서, &quot;측정 안 됨&quot;과
-            &quot;값이 0&quot;을 모델이 구분할 수 있어야 합니다.
+            회색 칸은 그날 측정되지 않은 신호입니다. 웨어러블 데이터는{" "}
+            <span className="font-medium">결측이 예외가 아니라 기본 상태</span>라서, 0으로 채우지 않고
+            비운 채로 둡니다 — &quot;측정 안 됨&quot;과 &quot;값이 0&quot;은 다릅니다.
+            <br />
+            {/* ★ 백엔드는 이 값들을 모델로 전송하지 않는다. 일차 정수 하나만 보내고
+                모델이 같은 원본에서 직접 읽는다. "전달합니다"라고 쓰면 거짓말이 된다. */}
+            <span className="opacity-70">
+              백엔드는 모델에 <span className="font-medium">일차만 전송</span>하고, 모델은 같은 원본
+              데이터를 직접 읽어 그 일차까지로 계산합니다.
+            </span>
           </>
         )}
       </p>

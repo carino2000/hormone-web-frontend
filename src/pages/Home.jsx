@@ -18,6 +18,7 @@ export default function Home({ device }) {
   const fastForward = useSimulationStore((s) => s.isPlaying && s.speed >= 4);
   const dataRevision = useSimulationStore((s) => s.dataRevision);
   const coldStartDays = useSimulationStore((s) => s.coldStartDays);
+  const predictionError = useSimulationStore((s) => s.predictionError);
 
   // 로딩 상태를 effect 안에서 setState 로 만들지 않는다 (react-hooks/set-state-in-effect).
   // 대신 "어떤 키의 데이터를 들고 있는가"를 저장하고, 현재 키와 다르면 로딩으로 친다.
@@ -76,7 +77,14 @@ export default function Home({ device }) {
         ) : (
           <div className="flex flex-col items-center gap-1">
             <PredictionSummaryCard summary={summary} compact fastForward={fastForward} />
-            {pending && <PendingNotice day={currentDay} predictionDay={summary.predictionDay} compact />}
+            {pending && (
+              <PendingNotice
+                day={currentDay}
+                predictionDay={summary.predictionDay}
+                error={predictionError?.day === currentDay ? predictionError.message : null}
+                compact
+              />
+            )}
             <SafetyNotice compact />
           </div>
         )}
@@ -87,7 +95,13 @@ export default function Home({ device }) {
   return (
     <Frame>
       <div className="flex flex-col gap-4">
-        {pending && <PendingNotice day={currentDay} predictionDay={summary.predictionDay} />}
+        {pending && (
+          <PendingNotice
+            day={currentDay}
+            predictionDay={summary.predictionDay}
+            error={predictionError?.day === currentDay ? predictionError.message : null}
+          />
+        )}
         <div className={device === "pc" ? "grid grid-cols-2 gap-4" : "flex flex-col gap-4"}>
           {coldStart ? (
             <ColdStartCard

@@ -451,6 +451,30 @@ export async function getHistoryLog(day) {
         x,
         xMeasured: measured,
         xTotal: x.length,
+        /**
+         * 접힌 줄에 띄울 신호 요약 3개.
+         *
+         * 콜드스타트 구간(예측 전)은 Y 가 없어서 줄이 텅 비어 보였다. 그런데 그날도
+         * 웨어러블은 멀쩡히 들어와 있다 — "아무 일도 없던 날"이 아니라 "수집만 한 날"이다.
+         * 그걸 보여주려고 실제로 측정된 신호 몇 개를 뽑는다.
+         *
+         * 홈 6칸과 같은 키를 쓰되 <b>측정된 것만</b> 고른다. 결측인 칸을 "—" 로 채우면
+         * 요약이 오히려 비어 보인다. 이 참가자는 하루 44개 중 31~41개만 들어오므로
+         * 어떤 키가 빌지 날마다 다르다.
+         */
+        xSummary: HOME_VITAL_KEYS.map((k) => x.find((i) => i.key === k))
+          .filter((i) => i && i.measured)
+          .slice(0, 3)
+          .map((i) => ({
+            key: i.key,
+            label: i.label,
+            // 카탈로그의 decimals 로 자른다. 원값을 그대로 쓰면 rmssd 가
+            // "55.685", restlessness 가 "0.0629" 처럼 나와서 홈 타일(51.2 / 0.07)과
+            // 자릿수가 달라 보인다 — 같은 신호인데 화면마다 다르면 안 된다.
+            value:
+              typeof i.value === "number" ? i.value.toFixed(i.decimals ?? 0) : i.value,
+            unit: i.unit,
+          })),
         xGroups: WEARABLE_GROUPS.map((name) => ({
           name,
           items: x.filter((i) => i.group === name),
@@ -472,6 +496,13 @@ export async function getHistoryLog(day) {
     .reverse();
 }
 
+/**
+ * 예측 근거(신호 기여도). **모델팀이 못 준다고 해서 현재는 항상 빈 배열이다.**
+ * (모델 4개가 CNN/MixedLM/스태킹/T-LSTM 으로 제각각이라 통일된 기여도를 못 뽑는다)
+ *
+ * 호출부(PredictionDetail)가 길이 0 이면 카드를 렌더하지 않는다. 나중에 모델이
+ * 주기 시작하면 이 함수도 화면도 그대로 두고 값만 채워진다.
+ */
 export async function getContributions(day) {
   await ensureLoaded();
   return snapshotForPrediction(day)?.prediction?.contributions ?? [];

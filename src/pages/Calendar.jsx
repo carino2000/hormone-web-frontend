@@ -5,6 +5,7 @@ import { useSimulationStore } from "../state/simulationStore";
 import PCFrame from "../components/devices/PCFrame";
 import MobileFrame from "../components/devices/MobileFrame";
 import WatchFrame from "../components/devices/WatchFrame";
+import { WatchCycle } from "../components/devices/WatchScreens";
 import CycleCalendar from "../components/cards/CycleCalendar";
 
 const FRAMES = { pc: PCFrame, mobile: MobileFrame, watch: WatchFrame };
@@ -26,15 +27,11 @@ export default function Calendar({ device }) {
 
   const Frame = FRAMES[device];
 
+  // 워치는 한 달 격자 대신 "최근 흐름" 한 줄. 격자는 이 크기에서 안 읽힌다.
   if (device === "watch") {
     return (
       <Frame>
-        <div className="text-center">
-          <p className="text-[10px] opacity-70">오늘의 단계</p>
-          <p className="text-sm font-semibold">
-            {calendar.today_phase_label_ko ?? `수집 중 ${currentDay}/${coldStartDays}`}
-          </p>
-        </div>
+        <WatchCycle calendar={calendar} currentDay={currentDay} />
       </Frame>
     );
   }

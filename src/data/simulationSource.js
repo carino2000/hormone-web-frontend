@@ -11,8 +11,11 @@ import { fetchTimeline } from "./apiSource";
 
 // 백엔드에서 타임라인을 받기 전까지 쓰는 임시값. 실제 값은 응답이 오면 덮어쓴다.
 // (차트 X축 도메인 같은 게 첫 렌더에서 NaN 이 되지 않도록 하는 용도일 뿐이다)
-export const DEFAULT_TOTAL_DAYS = 90;
-export const DEFAULT_COLD_START_DAYS = 20;
+//
+// 83 = 시드 day_in_study 869~951. 모델 day_index 1 이 869 라 거기에 맞춰 잘랐다.
+// 15 = 첫 예측 일차. 모델에 days=15 가 나가야 estrogen(E3G)이 응답에 포함된다.
+export const DEFAULT_TOTAL_DAYS = 83;
+export const DEFAULT_COLD_START_DAYS = 15;
 
 let cache = null;
 let inflight = null;

@@ -33,6 +33,14 @@ export default function SimulatorBar() {
   const setSpeed = useSimulationStore((s) => s.setSpeed);
 
   const wsStatus = useSimulationStore((s) => s.wsStatus);
+  const isPredicting = useSimulationStore((s) => s.isPredicting);
+  const predictingDay = useSimulationStore((s) => s.predictingDay);
+  // ★ 아래 getDaySnapshot 은 모듈 캐시를 렌더 중에 읽는다. 그 캐시는 invalidateCache()
+  //   로 잠깐 비워졌다가 ensureLoaded() 로 다시 채워지는데, 이 컴포넌트가 구독하는
+  //   값만으로는 "다시 채워진 순간"에 리렌더가 안 걸린다. 그래서 캐시가 비어 있던
+  //   타이밍에 렌더된 화면이 그대로 남아 날짜가 사라진 채로 굳는다.
+  //   dataRevision 은 캐시가 갱신될 때마다 올라가므로 이걸 구독해 리렌더를 건다.
+  const dataRevision = useSimulationStore((s) => s.dataRevision);
   const isAdvancing = useSimulationStore((s) => s.isAdvancing);
   const loadError = useSimulationStore((s) => s.loadError);
   const init = useSimulationStore((s) => s.init);
@@ -63,6 +71,9 @@ export default function SimulatorBar() {
   const tickPercent = (coldStartDays / Math.max(1, totalDays)) * 100;
   const progressPercent = (currentDay / Math.max(1, totalDays)) * 100;
   const atEnd = currentDay >= totalDays;
+  // dataRevision 을 의존성으로 쓴다 (위 주석 참고). eslint 가 "안 쓰는 변수" 로 보지
+  // 않도록 여기서 명시적으로 참조한다 — 값 자체는 필요 없고 리렌더 트리거가 목적이다.
+  void dataRevision;
   const snapshot = getDaySnapshot(currentDay);
   const dot = WS_DOT[wsStatus] ?? WS_DOT.disconnected;
 
@@ -147,6 +158,23 @@ export default function SimulatorBar() {
           `Day ${currentDay + 1} 정보 보내기 →`
         )}
       </motion.button>
+
+      {/* 예측 대기 표시.
+          ★ 버튼을 잠그지 않는 이유: advance 는 202 로 즉시 끝나고 예측은 백그라운드로
+            돈다. 파이썬이 죽으면 예측이 영영 안 오는데 그때 버튼까지 잠기면 시연이
+            그 자리에서 멈춘다. 그래서 "막지 않고 알려만 준다".
+          ★ 위 버튼의 "처리 중..."(isAdvancing) 과 다른 구간이다 —
+            저건 advance 요청(~170ms), 이건 모델 계산(수백 ms~수 초). */}
+      {isPredicting && (
+        <div className="mt-2">
+          <div className="h-1 w-full overflow-hidden rounded-full bg-amber-400/20">
+            <div className="h-full w-1/3 animate-indeterminate rounded-full bg-amber-400" />
+          </div>
+          <p className="mt-1.5 text-center text-[11px] font-medium text-amber-600 dark:text-amber-400">
+            Day {predictingDay} 예측 계산 중…
+          </p>
+        </div>
+      )}
 
       <div className="flex items-center gap-2">
         <IconButton label="초기화" onClick={reset} disabled={isAdvancing}>

@@ -5,6 +5,7 @@ import { useSimulationStore } from "../state/simulationStore";
 import PCFrame from "../components/devices/PCFrame";
 import MobileFrame from "../components/devices/MobileFrame";
 import WatchFrame from "../components/devices/WatchFrame";
+import { WatchAdvice } from "../components/devices/WatchScreens";
 import { formatKoreanDate } from "../lib/formatDate";
 
 const FRAMES = { pc: PCFrame, mobile: MobileFrame, watch: WatchFrame };
@@ -54,12 +55,7 @@ export default function Advice({ device }) {
   if (device === "watch") {
     return (
       <Frame>
-        <div className="text-center">
-          <p className="text-[10px] opacity-70">오늘의 조언</p>
-          <p className="mt-1 text-[10px] leading-tight opacity-90">
-            {adviceLoading ? "받는 중…" : today?.content ? "도착" : "없음"}
-          </p>
-        </div>
+        <WatchAdvice loading={adviceLoading} content={today?.content} />
       </Frame>
     );
   }
@@ -76,7 +72,8 @@ export default function Advice({ device }) {
                 오늘의 조언
               </h3>
               <p className="mt-1 text-[11px] opacity-55">
-                최근 {status?.historyDays ?? 30}일 웨어러블과 예측을 함께 보고 생활 제안을 받습니다
+                최근 {status?.historyDays ?? 30}일 웨어러블과 예측을 함께 보고
+                생활 제안을 받습니다
               </p>
             </div>
 
@@ -92,17 +89,24 @@ export default function Advice({ device }) {
               API 키가 설정되지 않아 이 기능이 꺼져 있습니다.
               <br />
               <span className="font-mono">application-local.yaml</span> 의{" "}
-              <span className="font-mono">anthropic.api-key</span> 를 채우고 백엔드를 다시 띄우세요.
+              <span className="font-mono">anthropic.api-key</span> 를 채우고
+              백엔드를 다시 띄우세요.
             </p>
           ) : (
             <p className="mt-4 text-[11px] leading-relaxed text-neutral-500 dark:text-slate-400">
               {adviceEnabled ? (
                 <>
-                  켜져 있습니다 — <span className="font-medium">하루를 넘길 때마다 자동으로</span> 받습니다.
-                  자동재생 중에는 건너뜁니다(호출이 진행 속도를 못 따라갑니다).
+                  켜져 있습니다 —{" "}
+                  <span className="font-medium">
+                    하루를 넘길 때마다 자동으로
+                  </span>{" "}
+                  받습니다. 자동재생 중에는 건너뜁니다.
                 </>
               ) : (
-                <>꺼져 있습니다. 켜면 하루를 넘길 때마다 자동으로 조언을 받습니다.</>
+                <>
+                  꺼져 있습니다. 켜면 하루를 넘길 때마다 자동으로 조언을
+                  받습니다.
+                </>
               )}
             </p>
           )}
@@ -154,7 +158,9 @@ export default function Advice({ device }) {
         {/* ---------- 지난 조언 ---------- */}
         {past.length > 0 && (
           <div className="flex flex-col gap-3">
-            <p className="text-[11px] font-medium opacity-45">지난 조언 {past.length}건</p>
+            <p className="text-[11px] font-medium opacity-45">
+              지난 조언 {past.length}건
+            </p>
             {past.map((a) => (
               <AdviceCard key={a.id} advice={a} />
             ))}
@@ -163,8 +169,9 @@ export default function Advice({ device }) {
 
         {/* ★ 화면 어디서든 이 선을 지운 채로 두지 말 것 */}
         <p className="text-[11px] leading-relaxed text-neutral-400 dark:text-slate-500">
-          이 조언은 의료 진단이 아니며, 피임이나 임신 시도의 근거로 쓸 수 없습니다. 호르몬 수치는
-          측정값이 아니라 모델의 예측값입니다. 걱정되는 증상이 있으면 전문가와 상의하세요.
+          이 조언은 의료 진단이 아니며, 피임이나 임신 시도의 근거로 쓸 수
+          없습니다. 호르몬 수치는 측정값이 아니라 모델의 예측값입니다. 걱정되는
+          증상이 있으면 전문가와 상의하세요.
         </p>
       </div>
     </Frame>
@@ -186,7 +193,9 @@ function AdviceCard({ advice, highlight = false }) {
         <p className="text-sm font-medium">
           {formatKoreanDate(advice.targetDate)}
           {advice.dayInStudy != null && (
-            <span className="ml-1.5 text-[11px] opacity-45">Day {advice.dayInStudy}</span>
+            <span className="ml-1.5 text-[11px] opacity-45">
+              Day {advice.dayInStudy}
+            </span>
           )}
         </p>
         {failed ? (
@@ -197,9 +206,15 @@ function AdviceCard({ advice, highlight = false }) {
           <span className="text-[10px] tabular-nums opacity-35">
             {advice.model ?? "—"}
             {advice.inputTokens != null && (
-              <> · 입력 {advice.inputTokens.toLocaleString()} / 출력 {advice.outputTokens?.toLocaleString()}</>
+              <>
+                {" "}
+                · 입력 {advice.inputTokens.toLocaleString()} / 출력{" "}
+                {advice.outputTokens?.toLocaleString()}
+              </>
             )}
-            {advice.latencyMs != null && <> · {(advice.latencyMs / 1000).toFixed(1)}초</>}
+            {advice.latencyMs != null && (
+              <> · {(advice.latencyMs / 1000).toFixed(1)}초</>
+            )}
           </span>
         )}
       </div>
@@ -209,18 +224,22 @@ function AdviceCard({ advice, highlight = false }) {
           {advice.errorMessage}
         </pre>
       ) : (
-        <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">{advice.content}</div>
+        <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">
+          {advice.content}
+        </div>
       )}
 
       {advice.truncated && (
         <p className="mt-2 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[10px] text-amber-700 dark:bg-amber-400/10 dark:text-amber-300">
-          길이 상한에 걸려 문장이 잘렸습니다. <span className="font-mono">anthropic.max-tokens</span> 를 올리세요.
+          길이 상한에 걸려 문장이 잘렸습니다.{" "}
+          <span className="font-mono">anthropic.max-tokens</span> 를 올리세요.
         </p>
       )}
 
       {advice.sentDays != null && !failed && (
         <p className="mt-3 text-[10px] opacity-35">
-          최근 {advice.sentDays}일 × 웨어러블 {advice.sentFeatures}개 + 예측 이력을 보고 작성됨
+          최근 {advice.sentDays}일 × 웨어러블 {advice.sentFeatures}개 + 예측
+          이력을 보고 작성됨
         </p>
       )}
     </div>
@@ -237,7 +256,9 @@ function Toggle({ checked, disabled, onChange }) {
       disabled={disabled}
       onClick={onChange}
       className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-30 ${
-        checked ? "bg-indigo-500 dark:bg-sky-500" : "bg-neutral-200 dark:bg-white/15"
+        checked
+          ? "bg-indigo-500 dark:bg-sky-500"
+          : "bg-neutral-200 dark:bg-white/15"
       }`}
     >
       <span

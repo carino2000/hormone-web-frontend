@@ -4,11 +4,11 @@ import { useSimulationStore } from "../state/simulationStore";
 import PCFrame from "../components/devices/PCFrame";
 import MobileFrame from "../components/devices/MobileFrame";
 import WatchFrame from "../components/devices/WatchFrame";
+import WatchNow from "../components/devices/WatchNow";
 import PredictionSummaryCard from "../components/cards/PredictionSummaryCard";
 import VitalsSummary from "../components/cards/VitalsSummary";
 import ColdStartCard from "../components/cards/ColdStartCard";
 import ModelInputPanel from "../components/cards/ModelInputPanel";
-import SafetyNotice from "../components/SafetyNotice";
 import PendingNotice from "../components/PendingNotice";
 
 const FRAMES = { pc: PCFrame, mobile: MobileFrame, watch: WatchFrame };
@@ -69,25 +69,19 @@ export default function Home({ device }) {
   const coldStart = summary.isColdStart === true;
   const pending = summary.isPending === true;
 
+  // 워치는 PC/모바일과 화면 구성이 아예 다르다 — 지표를 줄이는 게 아니라
+  // "판정 하나만 보는 화면"으로 다시 짠 것이다. WatchNow 주석 참고.
   if (device === "watch") {
     return (
       <Frame>
-        {coldStart ? (
-          <ColdStartCard day={currentDay} coldStartDays={coldStartDays} compact fastForward={fastForward} />
-        ) : (
-          <div className="flex flex-col items-center gap-1">
-            <PredictionSummaryCard summary={summary} compact fastForward={fastForward} />
-            {pending && (
-              <PendingNotice
-                day={currentDay}
-                predictionDay={summary.predictionDay}
-                error={predictionError?.day === currentDay ? predictionError.message : null}
-                compact
-              />
-            )}
-            <SafetyNotice compact />
-          </div>
-        )}
+        <WatchNow
+          summary={summary}
+          coldStart={coldStart}
+          pending={pending}
+          predictionError={
+            predictionError?.day === currentDay ? predictionError.message : null
+          }
+        />
       </Frame>
     );
   }
@@ -120,9 +114,6 @@ export default function Home({ device }) {
             접힌 상태로 시작한다 — 홈에 처음 들어왔을 때 44칸이 펼쳐져 있으면
             제품 화면이 아니라 계기판 덤프로 보인다. 점 격자만으로도 규모는 전달된다. */}
         <ModelInputPanel inputs={inputs} variant="body" />
-
-        {/* 예측이 보이는 자리에 같이 둔다 — 푸터 구석에 두면 아무도 안 본다 */}
-        {!coldStart && <SafetyNotice />}
       </div>
     </Frame>
   );

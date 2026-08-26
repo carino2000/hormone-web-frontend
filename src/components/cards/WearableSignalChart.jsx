@@ -10,6 +10,7 @@ import {
   YAxis,
 } from "recharts";
 import { useSimulationStore } from "../../state/simulationStore";
+import { getChartWindow, sliceToWindow } from "../../lib/chartWindow";
 
 /**
  * 웨어러블 신호 곡선 (P-02).
@@ -40,9 +41,14 @@ import { useSimulationStore } from "../../state/simulationStore";
  *   데이터가 뒷받침하지 않는다. 모델이 44개를 다 먹는다는 사실은 옆의
  *   ModelInputPanel 이 따로 보여준다.
  */
-export default function WearableSignalChart({ data, theme = "light", fastForward = false }) {
+export default function WearableSignalChart({ data, theme = "light", fastForward = false, device = "pc" }) {
   const totalDays = useSimulationStore((s) => s.totalDays);
+  const currentDay = useSimulationStore((s) => s.currentDay);
   const coldStartDays = useSimulationStore((s) => s.coldStartDays);
+
+  // ★ 두 차트가 같은 헬퍼를 부른다. 각자 계산하면 언젠가 어긋난다(lib/chartWindow.js).
+  const win = getChartWindow({ currentDay, totalDays, coldStartDays, device });
+  const view = sliceToWindow(data, win);
   const dark = theme === "dark";
   const gridStroke = dark ? "#1e293b" : "#eee";
   const tickColor = dark ? "#94a3b8" : "#666";
@@ -59,13 +65,13 @@ export default function WearableSignalChart({ data, theme = "light", fastForward
 
       <div className="mt-4 h-48">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
+          <LineChart data={view}>
             <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
             <XAxis
               dataKey="day"
               type="number"
-              domain={[1, totalDays]}
-              ticks={[1, coldStartDays, Math.round(totalDays / 2), totalDays]}
+              domain={[win.from, win.to]}
+              ticks={win.ticks}
               tickFormatter={(d) => `D${d}`}
               fontSize={12}
               tick={{ fill: tickColor }}
@@ -79,12 +85,16 @@ export default function WearableSignalChart({ data, theme = "light", fastForward
               }
             />
             <Legend wrapperStyle={{ color: tickColor, fontSize: 11 }} />
-            <ReferenceLine
-              x={coldStartDays}
-              yAxisId="hrv"
-              stroke={dark ? "#38bdf8" : "#0ea5e9"}
-              strokeDasharray="3 3"
-            />
+            {/* 창이 예측 시작일을 지나가면 그리지 않는다 — 축 밖 값을 넘기면
+                recharts 가 왼쪽 끝에 붙여서 "여기가 예측 시작"이라는 거짓 표시가 된다 */}
+            {win.showColdStartLine && (
+              <ReferenceLine
+                x={coldStartDays}
+                yAxisId="hrv"
+                stroke={dark ? "#38bdf8" : "#0ea5e9"}
+                strokeDasharray="3 3"
+              />
+            )}
             <Line
               yAxisId="hrv"
               type="monotone"
@@ -114,7 +124,7 @@ export default function WearableSignalChart({ data, theme = "light", fastForward
       <p className="mt-2 text-[11px] leading-relaxed text-neutral-500 dark:text-slate-400">
         위 호르몬 곡선과 <span className="font-medium">같은 날짜 축</span>입니다.{" "}
         <span className="font-medium">가임기에 HRV가 떨어지고, 수면중 안정시 심박은 황체기까지
-        올라갑니다</span> — 이 참가자 90일 실측 평균으로 HRV는 난포기 53.5에서 가임기 47.1로 약 12%
+        올라갑니다</span> — 이 참가자 관측구간 실측 평균으로 HRV는 난포기 53.5에서 가임기 47.1로 약 12%
         낮아지고, 수면중 심박은 69.3에서 황체기 73.8로 올라갑니다. 모델은 이런 패턴을 학습합니다.
       </p>
     </div>

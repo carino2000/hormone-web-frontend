@@ -1,16 +1,24 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
-import { getHistoryLog } from "../api";
+import { getHistoryLog, getVitals } from "../api";
 import { useSimulationStore } from "../state/simulationStore";
 import PCFrame from "../components/devices/PCFrame";
 import MobileFrame from "../components/devices/MobileFrame";
 import WatchFrame from "../components/devices/WatchFrame";
+import { WatchSignals } from "../components/devices/WatchScreens";
 import { PHASE_LABELS_KO } from "../lib/phase";
 
 const FRAMES = { pc: PCFrame, mobile: MobileFrame, watch: WatchFrame };
 
-/** 한 페이지에 보여줄 일수. */
-const PAGE_SIZE = 10;
+/**
+ * 한 페이지에 보여줄 일수.
+ *
+ * ★ PC 프레임 안쪽 높이(600px - 패딩)에 <b>스크롤 없이</b> 들어가는 값이다.
+ *   10개였을 때는 목록이 넘쳐서 프레임 안에 또 스크롤이 생겼는데, 이 탭은
+ *   "DB 에 뭐가 쌓였나"를 한눈에 훑는 자리라 스크롤이 생기면 목적을 잃는다.
+ *   행 높이나 상단 카드를 건드리면 이 값도 다시 재야 한다.
+ */
+const PAGE_SIZE = 7;
 
 /**
  * 히스토리 로그 탭.
@@ -39,9 +47,12 @@ export default function HistoryLog({ device }) {
 
   useEffect(() => {
     let cancelled = false;
-    getHistoryLog(currentDay).then((rows) => {
-      if (!cancelled) setLoaded({ key, rows });
-    });
+    // vitals 는 워치 화면(신호 타일)에서만 쓴다. PC/모바일 표에는 안 들어간다.
+    Promise.all([getHistoryLog(currentDay), getVitals(currentDay)]).then(
+      ([rows, vitals]) => {
+        if (!cancelled) setLoaded({ key, rows, vitals });
+      },
+    );
     return () => {
       cancelled = true;
     };
@@ -55,14 +66,12 @@ export default function HistoryLog({ device }) {
   const Frame = FRAMES[device];
   const rows = loaded.rows;
 
-  // 워치에 표를 넣을 자리가 없다. 개수만 알린다.
+  // 워치에 44행 표를 넣을 자리가 없다. 대신 "워치가 실제로 재는 신호" 4개를
+  // 타일로 보여준다 — 기록 탭의 성격(원본 값)을 워치 크기로 옮긴 것이다.
   if (device === "watch") {
     return (
       <Frame>
-        <div className="text-center">
-          <p className="text-[10px] opacity-70">기록</p>
-          <p className="text-sm font-semibold">{rows.length}일</p>
-        </div>
+        <WatchSignals vitals={loaded.vitals} />
       </Frame>
     );
   }
@@ -108,7 +117,9 @@ export default function HistoryLog({ device }) {
           <p className="mt-3 text-[11px] leading-relaxed text-neutral-500 dark:text-slate-400">
             하루마다 <span className="font-medium">받은 입력 44개(X)</span>와{" "}
             <span className="font-medium">내놓은 출력(Y)</span>을 그대로 보여줍니다. 날짜를 누르면
-            펼쳐집니다. Y 가 없는 날은 예측 시작 전이라 수집만 한 날입니다.
+            펼쳐집니다.{" "}
+            <span className="text-teal-600 dark:text-teal-300">수집 기록</span>으로 표시된 날은
+            예측 시작 전이라 입력만 쌓은 날이고, 입력은 똑같이 다 저장돼 있습니다.
           </p>
         </div>
 
@@ -142,10 +153,10 @@ export default function HistoryLog({ device }) {
 }
 
 /**
- * 한 페이지에 10일치.
+ * 페이지 이동 바.
  *
- * 90일을 한 번에 깔면 스크롤이 끝없고, 하루 넘길 때마다 DOM 이 90행씩 다시 그려진다.
- * 로그에서 실제로 보는 건 대개 최근 며칠이라 10개면 충분하다.
+ * 83일을 한 번에 깔면 스크롤이 끝없고, 하루 넘길 때마다 DOM 이 83행씩 다시 그려진다.
+ * 로그에서 실제로 보는 건 대개 최근 며칠이라 한 페이지 {@link PAGE_SIZE}개면 충분하다.
  */
 function Pager({ page, pageCount, from, to, total, onChange }) {
   // 페이지가 많아도 버튼은 최대 5개만. 현재 페이지를 가운데 두고 창을 민다.
@@ -255,9 +266,23 @@ function LogRow({ row, open, onToggle }) {
             </span>
           </>
         ) : (
-          <span className="shrink-0 rounded-md bg-neutral-100 px-1.5 py-0.5 text-[10px] opacity-45 dark:bg-white/5">
-            Y 없음 (수집만)
-          </span>
+          /* 콜드스타트 구간. 예측은 없지만 웨어러블은 들어와 있다.
+             ★ 예측 줄(indigo)·실패 줄(rose)과 색을 갈라 놓는다 — 같은 색을 쓰면
+               "예측이 있는 날"로 오해한다. teal 은 이 화면에서 여기서만 쓴다.
+             ★ 문구도 "없음"이 아니라 "기록"이다. 데이터가 없는 게 아니라
+               아직 예측을 안 돌리는 구간일 뿐이라는 걸 드러낸다. */
+          <>
+            <span className="shrink-0 rounded-md bg-teal-50 px-1.5 py-0.5 text-[10px] font-medium text-teal-600 dark:bg-teal-400/10 dark:text-teal-300">
+              수집 기록
+            </span>
+            <span className="truncate text-[11px] tabular-nums opacity-55">
+              {row.xSummary?.length
+                ? row.xSummary
+                    .map((s) => `${s.label} ${s.value}${s.unit ? ` ${s.unit}` : ""}`)
+                    .join(" · ")
+                : "측정된 신호 없음"}
+            </span>
+          </>
         )}
 
         <span className="ml-auto flex shrink-0 items-center gap-2 text-[10px] tabular-nums opacity-35">

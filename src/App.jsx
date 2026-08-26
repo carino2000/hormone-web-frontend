@@ -120,8 +120,10 @@ function App() {
         {/* 프리뷰 컬럼: 헤더 아래 남은 공간을 전부 쓰고, 내용이 넘치면 이 컬럼만 스크롤된다. */}
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <main
-            className={`flex-1 overflow-y-auto px-6 py-10 ${
-              isPhoneDevice ? "flex flex-col items-center" : ""
+            // 폰/워치 목업은 프레임 자체가 화면을 흉내 내므로 바깥 여백을 줄이고
+            // 남는 높이를 프레임에 넘긴다(min-h-0 이 있어야 flex 자식이 줄어든다).
+            className={`flex-1 overflow-y-auto px-6 ${
+              isPhoneDevice ? "flex min-h-0 flex-col items-center py-6" : "py-10"
             }`}
           >
             <Routes>

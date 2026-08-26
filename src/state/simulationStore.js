@@ -53,6 +53,21 @@ export const useSimulationStore = create((set, get) => ({
   isAdvancing: false, // 요청 진행 중 (버튼 중복 발사 방지)
   loadError: null, // 백엔드에 못 붙었을 때의 사유. 화면이 이걸 그대로 보여준다
 
+  /**
+   * 예측을 요청해놓고 아직 결과가 안 온 상태.
+   *
+   * ★ {@link isAdvancing} 과 다르다. advance 는 백엔드가 **202 로 즉시** 응답하고
+   * 예측은 백그라운드로 돈다. 그래서 isAdvancing 은 ~170ms 만에 풀리는데 예측은
+   * 그 뒤로도 수백 ms~수 초가 더 걸린다. 그 구간에 화면이 아무 표시도 안 하면
+   * "누른 게 먹은 건가?" 가 된다.
+   *
+   * ★ <b>이 값으로 버튼을 잠그지 않는다.</b> 파이썬이 죽으면 예측이 영영 안 오는데,
+   * 그때 버튼까지 잠기면 시연이 그 자리에서 끝난다. 진행 표시만 하고 조작은 막지 않는다.
+   * (그래도 안 풀리는 경우를 대비해 predictingTimer 로 강제 해제한다)
+   */
+  isPredicting: false,
+  predictingDay: null,
+
   // 화면 갱신 트리거.
   // 예측은 비동기라 advance 직후에는 아직 결과가 없고, 잠시 뒤 WebSocket 으로 도착한다.
   // 그때 currentDay 는 이미 같은 값이라 zustand 가 변경으로 안 보고 리렌더를 안 건다.
@@ -130,6 +145,9 @@ export const useSimulationStore = create((set, get) => ({
       const day = get().currentDay;
       if (day > 0 && day < get().coldStartDays) {
         get().requestAdvice({ auto: true });
+      } else if (day >= get().coldStartDays) {
+        // 예측을 기다리는 구간에 들어섰다. 결과는 WebSocket 으로 온다.
+        get().beginPredicting(day);
       }
     } catch (error) {
       set({ loadError: error?.message ?? "백엔드 응답 없음", isPlaying: false });
@@ -170,6 +188,9 @@ export const useSimulationStore = create((set, get) => ({
 
   /** Day 0 으로 초기화. 백엔드의 수집 데이터와 예측을 지운다(시드는 보존). */
   reset: async () => {
+    // Day 0 으로 되돌리므로 기다리던 예측도 의미가 없어진다.
+    // 안 끄면 초기화 직후에도 "계산 중" 이 남는다.
+    get().endPredicting();
     set({ isAdvancing: true, isPlaying: false });
     try {
       await httpPost(endpoints.demoReset());
@@ -207,8 +228,37 @@ export const useSimulationStore = create((set, get) => ({
   clearError: () => set({ loadError: null }),
 
   /** 웹소켓으로 예측 완료 알림이 오면 타임라인을 다시 받아 화면을 갱신한다. */
+  /**
+   * "예측 요청함, 결과 대기 중" 표시를 켠다.
+   *
+   * 안전장치가 하나 붙어 있다: WebSocket 이벤트가 끝내 안 오는 경우
+   * (파이썬이 죽었거나, 백엔드가 이벤트를 못 보냈거나) 진행 표시가 영원히 남는다.
+   * 그러면 발표자가 계속 기다리게 되므로 일정 시간 뒤 강제로 끈다.
+   * 백엔드 read-timeout 이 30초라 그보다 넉넉히 잡는다.
+   */
+  beginPredicting: (day) => {
+    clearTimeout(get().predictingTimer);
+    const timer = setTimeout(() => {
+      // 여기 걸렸다는 건 예측 결과가 끝내 안 왔다는 뜻이다. 표시만 끄고
+      // 에러로 단정하지는 않는다 — 실제 실패는 PREDICTION_FAILED 가 따로 알려준다.
+      set({ isPredicting: false, predictingDay: null, predictingTimer: null });
+    }, 35000);
+    set({ isPredicting: true, predictingDay: day, predictingTimer: timer });
+  },
+
+  endPredicting: () => {
+    clearTimeout(get().predictingTimer);
+    set({ isPredicting: false, predictingDay: null, predictingTimer: null });
+  },
+
+  predictingTimer: null,
+
   onPredictionEvent: async (event) => {
     if (event?.type !== "PREDICTION_READY" && event?.type !== "PREDICTION_FAILED") return;
+
+    // 성공이든 실패든 대기는 끝났다. 실패도 반드시 꺼야 한다 —
+    // 안 끄면 "계산 중" 표시가 실패 배너와 같이 떠서 서로 모순돼 보인다.
+    get().endPredicting();
 
     invalidateCache();
     try {

@@ -11,6 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import { useSimulationStore } from "../../state/simulationStore";
+import { getChartWindow, sliceToWindow } from "../../lib/chartWindow";
 
 // data: [{day, date, lh, estrogen, pdg, lhActual, estrogenActual, pdgActual}, ...]
 //
@@ -23,9 +24,14 @@ import { useSimulationStore } from "../../state/simulationStore";
 //
 // ★ *Actual은 실측 정답이다(P-01). 예측선과 겹쳐 그려서 "예쁜 대시보드"가 아니라
 //   "맞히는 모델"임을 보여준다. 예측이 주인공이므로 실측은 가늘고 흐리게 깐다.
-export default function HormoneChart({ data, theme = "light", fastForward = false }) {
+export default function HormoneChart({ data, theme = "light", fastForward = false, device = "pc" }) {
   const totalDays = useSimulationStore((s) => s.totalDays);
+  const currentDay = useSimulationStore((s) => s.currentDay);
   const coldStartDays = useSimulationStore((s) => s.coldStartDays);
+
+  // ★ 두 차트가 같은 헬퍼를 부른다. 각자 계산하면 언젠가 어긋난다(lib/chartWindow.js).
+  const win = getChartWindow({ currentDay, totalDays, coldStartDays, device });
+  const view = sliceToWindow(data, win);
   const dark = theme === "dark";
   const gridStroke = dark ? "#1e293b" : "#eee";
   const tickColor = dark ? "#94a3b8" : "#666";
@@ -79,13 +85,13 @@ export default function HormoneChart({ data, theme = "light", fastForward = fals
 
       <div className="mt-4 h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
+          <LineChart data={view}>
             <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
             <XAxis
               dataKey="day"
               type="number"
-              domain={[1, totalDays]}
-              ticks={[1, coldStartDays, Math.round(totalDays / 2), totalDays]}
+              domain={[win.from, win.to]}
+              ticks={win.ticks}
               tickFormatter={(d) => `D${d}`}
               fontSize={12}
               tick={{ fill: tickColor }}
@@ -102,13 +108,15 @@ export default function HormoneChart({ data, theme = "light", fastForward = fals
               }
             />
             <Legend wrapperStyle={{ color: tickColor, fontSize: 11 }} />
-            <ReferenceLine
-              x={coldStartDays}
-              yAxisId="lhPdg"
-              stroke={dark ? "#38bdf8" : "#0ea5e9"}
-              strokeDasharray="3 3"
-              label={{ value: "예측 시작", position: "top", fontSize: 10, fill: dark ? "#38bdf8" : "#0ea5e9" }}
-            />
+            {win.showColdStartLine && (
+              <ReferenceLine
+                x={coldStartDays}
+                yAxisId="lhPdg"
+                stroke={dark ? "#38bdf8" : "#0ea5e9"}
+                strokeDasharray="3 3"
+                label={{ value: "예측 시작", position: "top", fontSize: 10, fill: dark ? "#38bdf8" : "#0ea5e9" }}
+              />
+            )}
 
             {/* 실측선을 먼저 그려서 예측선이 위에 오게 한다 */}
             {showActual && actualLine("lhPdg", "lhActual", COLORS.lh, "LH 실측")}

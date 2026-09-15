@@ -1187,7 +1187,7 @@ React 19 · Vite 8 · Tailwind CSS 4 · Zustand 5 · Recharts 3 · React Router 
 
 ### 화면
 
-| 탭 | 경로 | 내䚩 |
+| 탭 | 경로 | 내용 |
 |---|---|---|
 | 홈 | `/` | 오늘의 주기 단계, 생체신호 요약, 안전 고지 |
 | 예측 상세 | `/prediction` | 호르몬 예측·실측 곡선, 모델 기여도, 오차 |

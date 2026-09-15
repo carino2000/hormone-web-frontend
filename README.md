@@ -1171,3 +1171,56 @@ hormone_web/
 > ★ **피처를 추가·변경할 때는 두 파일을 같이 고친다** —
 > 백엔드 `WearableFeatures.java`(DB 컬럼명)와 프론트 `wearableCatalog.js`(라벨·단위·그룹).
 > **키가 1:1 로 맞아야 한다.** 현재 44/44 일치.
+
+---
+
+## 프로젝트 소개 (요약)
+
+웨어러블 기반 호르몬 예측 결과를 보여주는 시연용 대시보드입니다. 같은 화면을 PC · 모바일 · 워치 프레임으로 바꿔 볼 수 있습니다.
+
+- NVIDIA AI 전문인력 양성과정 기업 연계 PoC (식스레터스) · 과정 우수상
+- 시연 영상: https://drive.google.com/file/d/11w_eEh9f-VIQdsKwakZPuvsIdu0UWpgF/view?usp=drive_link
+
+### 기술 스택
+
+React 19 · Vite 8 · Tailwind CSS 4 · Zustand 5 · Recharts 3 · React Router 7 · STOMP · Framer Motion
+
+### 화면
+
+| 탭 | 경로 | 내䚩 |
+|---|---|---|
+| 홈 | `/` | 오늘의 주기 단계, 생체신호 요약, 안전 고지 |
+| 예측 상세 | `/prediction` | 호르몬 예측·실측 곡선, 모델 기여도, 오차 |
+| 달력 | `/calendar` | 주기 단계 표시 |
+| 모델 성능 | `/model` | MAE · MAPE · 상관계수, 주기 단계 혼동행렬 |
+| 조언 | `/advice` | Claude 생활 조언 |
+| 기록 | `/history` | 날짜별 수집값과 예측 요청 상태 |
+
+### 상태 처리
+
+하루 넘기기 요청은 202로 먼저 응답하고, 예측 결과는 STOMP로 나중에 도착합니다. 그래서 화면 상태를 4가지로 나눕니다.
+
+| 상태 | 화면 |
+|---|---|
+| `before_start` | 시작 전 |
+| `collecting` | 콜드스타트 (아직 예측 없음) |
+| `pending` | 직전 예측을 유지하고 "계산 중" 표시 |
+| `ready` | 오늘 예측 표시 |
+
+### 실행
+
+```bash
+npm install
+cp .env.example .env.local     # 없어도 기본값으로 동작
+npm run dev                    # http://localhost:5173
+```
+
+| 환경변수 | 기본값 |
+|---|---|
+| `VITE_API_BASE_URL` | `http://localhost:8085` |
+| `VITE_WS_URL` | `ws://localhost:8085/ws` |
+| `VITE_DEMO_USER_ID` | `1` |
+
+### 관련 저장소
+
+- Backend: https://github.com/DLI-6Letters/hormone-web-backend
